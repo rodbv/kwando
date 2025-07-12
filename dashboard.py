@@ -35,7 +35,6 @@ default_file_text = pn.pane.Markdown("**Current data:** data/data.csv (default)"
 
 # Global state for data source
 current_data_file = "data/data.csv"
-data_preview_df = None
 
 
 # Function to load and preview data
@@ -49,26 +48,28 @@ def load_data_preview(filename="data/data.csv"):
         return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
 
-# Initialize data preview
-data_preview_df = load_data_preview()
+# The data preview pane, created once and updated reactively
+data_preview_pane = pn.pane.DataFrame(
+    load_data_preview(), name="Data Preview", height=400
+)
 
 
 # Function to handle file upload and update global state
 def handle_file_upload(event):
-    global current_data_file, data_preview_df
+    global current_data_file
     if event.new is not None and len(event.new) > 0:
         # Save uploaded file
         with open("temp_upload.csv", "wb") as f:
             f.write(event.new)
         current_data_file = "temp_upload.csv"
-        # Update preview
-        data_preview_df = load_data_preview(current_data_file)
+        # Update preview pane reactively
+        data_preview_pane.object = load_data_preview(current_data_file)
         # Update the text
         default_file_text.object = f"**Current data:** {current_data_file} (uploaded)"
     else:
         # Reset to default
         current_data_file = "data/data.csv"
-        data_preview_df = load_data_preview(current_data_file)
+        data_preview_pane.object = load_data_preview(current_data_file)
         default_file_text.object = "**Current data:** data/data.csv (default)"
 
 
@@ -347,7 +348,7 @@ def get_main_content(show_help, sim_type):
                 ),
                 pn.layout.Spacer(height=20),
                 pn.pane.Markdown("### Data Preview (First 100 rows)"),
-                pn.pane.DataFrame(data_preview_df, name="Data Preview", height=400),
+                data_preview_pane,  # Use the reactive pane here
                 pn.layout.Spacer(height=30),
                 pn.pane.Markdown("**Upload a CSV file with the following columns:**"),
                 pn.pane.Markdown("- `id`: Unique identifier for each work item"),
