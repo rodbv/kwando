@@ -8,6 +8,7 @@ from monte_carlo import (
 )
 from datetime import datetime, timedelta
 import argparse
+import os
 
 # Initialize Panel with template support
 pn.extension("tabulator", "ace")
@@ -34,8 +35,20 @@ data_source_button = pn.widgets.Button(
 file_input = pn.widgets.FileInput(name="Upload Custom CSV")
 default_file_text = pn.pane.Markdown("**Current data:** data/data.csv (default)")
 
+# List all CSV files in the data/ directory
+csv_files = [f"data/{f}" for f in os.listdir("data") if f.endswith(".csv")]
+
+# File selector widget
+file_selector = pn.widgets.Select(
+    name="Choose CSV file", options=csv_files, value=csv_files[0] if csv_files else None
+)
+
 # Global state for data source
 current_data_file = "data/data.csv"
+
+
+def get_current_data_file():
+    return file_selector.value
 
 
 # Function to calculate and display data statistics
@@ -71,47 +84,55 @@ def get_data_stats_md(df):
 
 
 # The data preview pane, created once and updated reactively
-initial_data = load_and_clean_data(current_data_file)
+if file_selector.value:
+    initial_data = load_and_clean_data(file_selector.value)
+else:
+    initial_data = pd.DataFrame({"Info": ["No CSV file found in data/ directory."]})
+
 data_preview_pane = pn.pane.DataFrame(
-    initial_data.head(100), name="Data Preview", height=400, sizing_mode="stretch_width"
+    initial_data.head(100) if file_selector.value else initial_data,
+    name="Data Preview",
+    height=400,
+    sizing_mode="stretch_width",
 )
 data_stats_pane = pn.pane.Markdown(
-    get_data_stats_md(initial_data), sizing_mode="stretch_width"
+    (
+        get_data_stats_md(initial_data)
+        if file_selector.value
+        else "### Data Statistics\n\nNo file available."
+    ),
+    sizing_mode="stretch_width",
 )
 
+# On startup, if no file is available, show a message
+if not file_selector.value:
+    data_preview_pane.object = pd.DataFrame(
+        {"Info": ["No CSV file found in data/ directory."]}
+    )
+    data_stats_pane.object = "### Data Statistics\n\nNo file available."
+    default_file_text.object = "**No data file available.**"
 
-# Function to handle file upload and update global state
-def handle_file_upload(event):
-    global current_data_file
-    if event.new is not None and len(event.new) > 0:
-        # Save uploaded file
-        with open("temp_upload.csv", "wb") as f:
-            f.write(event.new)
-        current_data_file = "temp_upload.csv"
-        # Load new data
-        full_df = load_and_clean_data(current_data_file)
-        # Update preview pane reactively
-        data_preview_pane.object = (
-            full_df.head(100) if "Error" not in full_df.columns else full_df
+
+# Function to handle file selection and update preview/stats
+
+
+def handle_file_selection(event):
+    if not file_selector.value:
+        data_preview_pane.object = pd.DataFrame(
+            {"Info": ["No CSV file selected or available in data/ directory."]}
         )
-        data_stats_pane.object = get_data_stats_md(full_df)
-        # Update the text
-        default_file_text.object = f"**Current data:** {current_data_file} (uploaded)"
-    else:
-        # Reset to default
-        current_data_file = "data/data.csv"
-        # Load default data
-        full_df = load_and_clean_data(current_data_file)
-        # Update preview pane reactively
-        data_preview_pane.object = (
-            full_df.head(100) if "Error" not in full_df.columns else full_df
-        )
-        data_stats_pane.object = get_data_stats_md(full_df)
-        default_file_text.object = "**Current data:** data/data.csv (default)"
+        data_stats_pane.object = "### Data Statistics\n\nNo file selected."
+        default_file_text.object = "**No data file selected.**"
+        return
+    full_df = load_and_clean_data(file_selector.value)
+    data_preview_pane.object = (
+        full_df.head(100) if "Error" not in full_df.columns else full_df
+    )
+    data_stats_pane.object = get_data_stats_md(full_df)
+    default_file_text.object = f"**Current data:** {file_selector.value}"
 
 
-# Link file input to handler
-file_input.param.watch(handle_file_upload, "value")
+file_selector.param.watch(handle_file_selection, "value")
 
 # Create a parameter to track which simulation is active
 active_simulation = pn.widgets.Select(
@@ -277,13 +298,25 @@ def update_period_results(start_date, end_date):
 
 
 # Create the reactive functions that update based on widget changes
-@pn.depends(num_cards_slider.param.value, start_date_picker.param.value)
-def get_work_items_results(num_cards, start_date):
+@pn.depends(
+    num_cards_slider.param.value,
+    start_date_picker.param.value,
+    file_selector.param.value,
+)
+def get_work_items_results(num_cards, start_date, selected_file):
+    global current_data_file
+    current_data_file = selected_file
     return update_work_items_results(num_cards, start_date)
 
 
-@pn.depends(period_start_date.param.value, period_end_date.param.value)
-def get_period_results(start_date, end_date):
+@pn.depends(
+    period_start_date.param.value,
+    period_end_date.param.value,
+    file_selector.param.value,
+)
+def get_period_results(start_date, end_date, selected_file):
+    global current_data_file
+    current_data_file = selected_file
     return update_period_results(start_date, end_date)
 
 
@@ -360,6 +393,7 @@ def get_main_content(show_help, sim_type):
                 pn.Row(
                     pn.Column(
                         "### Parameters",
+                        file_selector,
                         num_cards_slider,
                         start_date_picker,
                         sizing_mode="stretch_width",
@@ -373,6 +407,7 @@ def get_main_content(show_help, sim_type):
                 pn.Row(
                     pn.Column(
                         "### Parameters",
+                        file_selector,
                         period_start_date,
                         period_end_date,
                         sizing_mode="stretch_width",
@@ -387,7 +422,7 @@ def get_main_content(show_help, sim_type):
                     pn.Column(
                         "### Data Source Configuration",
                         default_file_text,
-                        file_input,
+                        file_selector,
                         sizing_mode="stretch_width",
                     ),
                 ),
@@ -402,7 +437,7 @@ def get_main_content(show_help, sim_type):
                     sizing_mode="stretch_width",
                 ),
                 pn.layout.Spacer(height=30),
-                pn.pane.Markdown("**Upload a CSV file with the following columns:**"),
+                pn.pane.Markdown("**CSV file must have the following columns:**"),
                 pn.pane.Markdown("- `id`: Unique identifier for each work item"),
                 pn.pane.Markdown("- `grp`: Group/project identifier"),
                 pn.pane.Markdown(
@@ -411,7 +446,6 @@ def get_main_content(show_help, sim_type):
                 pn.pane.Markdown("- `created_date`: When the work item was created"),
             )
             title = "Data Source"
-
     # Wrap content in a card with smooth transition
     return pn.Card(
         pn.Column(
