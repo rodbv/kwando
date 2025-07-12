@@ -19,18 +19,21 @@ pn.extension("tabulator", "ace")
 ACCENT_COLOR = "#2c5282"  # A more elegant navy blue
 ACCENT_COLOR_DARK = "#90cdf4"  # Lighter blue for dark mode
 
+# Define constants for button/page texts
+DATA_SOURCE_LABEL = "📁 Data Source"
+WHEN_LABEL = "⏰ When will it be done?"
+HOW_MANY_LABEL = "📊 How many items?"
+
 # Create widgets for both simulation types
-when_button = pn.widgets.Button(
-    name="⏰ When will it be done?", button_type="primary", width=200
-)
+when_button = pn.widgets.Button(name=WHEN_LABEL, button_type="primary", width=200)
 
 how_many_button = pn.widgets.Button(
-    name="📊 How many items?", button_type="primary", width=200
+    name=HOW_MANY_LABEL, button_type="primary", width=200
 )
 
 # Add data source button and state management
 data_source_button = pn.widgets.Button(
-    name="📁 Data Source", button_type="default", width=200
+    name=DATA_SOURCE_LABEL, button_type="default", width=200
 )
 
 # File picker widget and default file text
@@ -282,8 +285,8 @@ def make_checkbox_reactive(checkbox):
 # Create a parameter to track which simulation is active
 active_simulation = pn.widgets.Select(
     name="Active Simulation",
-    options=["Data Source", "When will it be done?", "How many items?"],
-    value="Data Source",
+    options=[DATA_SOURCE_LABEL, WHEN_LABEL, HOW_MANY_LABEL],
+    value=DATA_SOURCE_LABEL,
     visible=False,  # Hide this control, we'll use it just for state
 )
 
@@ -299,17 +302,17 @@ help_visible = pn.widgets.Toggle(
 # Update active simulation when buttons are clicked
 def set_when_active(event):
     help_visible.value = False  # Reset help toggle
-    active_simulation.value = "When will it be done?"
+    active_simulation.value = WHEN_LABEL
 
 
 def set_how_many_active(event):
     help_visible.value = False  # Reset help toggle
-    active_simulation.value = "How many items?"
+    active_simulation.value = HOW_MANY_LABEL
 
 
 def set_data_source_active(event):
     help_visible.value = False  # Reset help toggle
-    active_simulation.value = "Data Source"
+    active_simulation.value = DATA_SOURCE_LABEL
 
 
 when_button.on_click(set_when_active)
@@ -321,13 +324,13 @@ data_source_button.on_click(set_data_source_active)
 @pn.depends(active_simulation.param.value, help_visible.param.value)
 def update_button_styles(active, show_help):
     data_source_button.button_type = (
-        "primary" if active == "Data Source" and not show_help else "default"
+        "primary" if active == DATA_SOURCE_LABEL and not show_help else "default"
     )
     when_button.button_type = (
-        "primary" if active == "When will it be done?" and not show_help else "default"
+        "primary" if active == WHEN_LABEL and not show_help else "default"
     )
     how_many_button.button_type = (
-        "primary" if active == "How many items?" and not show_help else "default"
+        "primary" if active == HOW_MANY_LABEL and not show_help else "default"
     )
     return ""
 
@@ -542,30 +545,27 @@ Monte Carlo simulation is a mathematical technique that helps us make prediction
 # Create a dynamic panel with smooth transitions
 @pn.depends(help_visible.param.value, active_simulation.param.value)
 def get_main_content(show_help, sim_type):
-    # Create the content based on current state
     if show_help:
         content = help_text
         title = "About Monte Carlo Simulation"
     else:
-        if sim_type == "When will it be done?":
+        if sim_type == WHEN_LABEL:
             content = pn.Column(
                 pn.Row(
                     pn.Column(
-                        "### Parameters",
-                        data_source_info,  # Show current file and tags info (reactive)
+                        data_source_info,
                         num_cards_slider,
                         sizing_mode="stretch_width",
                     ),
                 ),
                 work_items_results,
             )
-            title = "When will these work items be done?"
-        elif sim_type == "How many items?":
+            title = WHEN_LABEL
+        elif sim_type == HOW_MANY_LABEL:
             content = pn.Column(
                 pn.Row(
                     pn.Column(
-                        "### Parameters",
-                        data_source_info,  # Show current file and tags info (reactive)
+                        data_source_info,
                         period_start_date,
                         period_end_date,
                         sizing_mode="stretch_width",
@@ -573,16 +573,15 @@ def get_main_content(show_help, sim_type):
                 ),
                 period_results,
             )
-            title = "How many items can we complete?"
+            title = HOW_MANY_LABEL
         else:  # Data Source
             content = pn.Column(
                 pn.Row(
                     pn.Column(
-                        "### Data Source Configuration",
                         default_file_text,
                         file_selector,
                         pn.layout.Spacer(height=10),
-                        tag_checkboxes,  # Use the dynamic tag_checkboxes
+                        tag_checkboxes,
                         sizing_mode="stretch_width",
                     ),
                 ),
@@ -602,17 +601,17 @@ def get_main_content(show_help, sim_type):
                 pn.pane.Markdown(
                     "- `cycle_time_days`: Time taken to complete the work item"
                 ),
-                pn.pane.Markdown("- `created_date`: When the work item was created"),
+                pn.pane.Markdown(
+                    "- `tags`: Comma-separated tags for filtering (optional)"
+                ),
             )
-            title = "Data Source"
-    # Wrap content in a card with smooth transition
-    return pn.Card(
-        pn.Column(
-            pn.pane.Markdown(f"# {title}"),
-            content,
-        ),
-        styles={"border": "1px solid #e2e8f0", "border-radius": "8px"},
+            title = DATA_SOURCE_LABEL
+    return pn.Column(
+        pn.pane.Markdown(f"# {title}"),
+        content,
+        sizing_mode="stretch_width",
         margin=(10, 0),
+        styles={"background": "white", "box-shadow": "none", "border": "none"},
     )
 
 
