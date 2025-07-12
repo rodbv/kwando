@@ -93,7 +93,7 @@ data_preview_pane = pn.pane.DataFrame(
     initial_data.head(100) if file_selector.value else initial_data,
     name="Data Preview",
     height=400,
-    sizing_mode="stretch_width",
+    width=500,
 )
 data_stats_pane = pn.pane.Markdown(
     (
