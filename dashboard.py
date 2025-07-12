@@ -4,6 +4,7 @@ from monte_carlo import (
     forecast_days_for_work_items,
     forecast_work_items_in_period,
     get_next_business_day,
+    load_and_clean_data,
 )
 from datetime import datetime, timedelta
 import argparse
@@ -35,19 +36,6 @@ default_file_text = pn.pane.Markdown("**Current data:** data/data.csv (default)"
 
 # Global state for data source
 current_data_file = "data/data.csv"
-
-
-# Function to load and clean data from a file
-def load_and_clean_data(filename="data/data.csv"):
-    try:
-        df = pd.read_csv(filename, parse_dates=["created_date"])
-        # Clean the data
-        cleaned = df[
-            (df["created_date"] > "2018-01-01") & (df["cycle_time_days"] > -1)
-        ].copy()
-        return cleaned
-    except Exception as e:
-        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
 
 # Function to calculate and display data statistics
@@ -83,7 +71,7 @@ def get_data_stats_md(df):
 
 
 # The data preview pane, created once and updated reactively
-initial_data = load_and_clean_data()
+initial_data = load_and_clean_data(current_data_file)
 data_preview_pane = pn.pane.DataFrame(
     initial_data.head(100), name="Data Preview", height=400, sizing_mode="stretch_width"
 )
@@ -221,6 +209,10 @@ def update_work_items_results(num_cards, start_date):
             start_date=start_date,
         )
 
+        # Check if the results are valid before proceeding
+        if not results or not results.get("percentile_dates"):
+            return "## Warning\n\nCould not generate a forecast. This is likely due to missing or invalid data in the source file. Please check the data and try again."
+
         table_data = []
         for percentile, date in results["percentile_dates"].items():
             table_data.append(
@@ -254,6 +246,10 @@ def update_period_results(start_date, end_date):
             filename=current_data_file,
             num_iterations=5000,
         )
+
+        # Check if the results are valid before proceeding
+        if not results or not results.get("percentiles"):
+            return "## Warning\n\nCould not generate a forecast. This is likely due to missing or invalid data in the source file. Please check the data and try again."
 
         # Calculate number of days in the period
         start_ts = pd.Timestamp(results["start_date"])

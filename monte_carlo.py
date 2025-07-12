@@ -2,18 +2,39 @@ import pandas as pd
 import numpy as np
 import random
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 PERCENTILES = [70, 80, 90, 95, 98]
 
 
-def get_next_business_day() -> datetime.date:
+def get_next_business_day() -> date:
     """Calculate the next business day from today"""
     next_day = datetime.now() + timedelta(days=1)
     # Keep adding days until we get a weekday (Monday = 0, Sunday = 6)
     while next_day.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
         next_day += timedelta(days=1)
     return next_day.date()
+
+
+def load_and_clean_data(filename: str, min_date: str = "2018-01-01") -> pd.DataFrame:
+    """
+    Load and clean data from a CSV file.
+
+    - Reads the specified CSV file.
+    - Parses 'created_date' column.
+    - Filters out records with a created_date before min_date.
+    - Filters out records with a cycle_time_days <= 0.
+    """
+    try:
+        df = pd.read_csv(filename, parse_dates=["created_date"])
+        # Clean the data, excluding cycle times <= 0 and dates before min_date
+        cleaned = df[
+            (df["created_date"] > min_date) & (df["cycle_time_days"] > 0)
+        ].copy()
+        return cleaned
+    except Exception as e:
+        # Return an empty DataFrame with an Error column if loading fails
+        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
 
 def forecast_days_for_work_items(
@@ -47,12 +68,47 @@ def forecast_days_for_work_items(
             - 'start_date': str, start date used for forecast
     """
     # Load and clean data
-    df = pd.read_csv(filename, parse_dates=["created_date"])
-    cleaned = df[(df["created_date"] > min_date) & (df["cycle_time_days"] > -1)]
+    cleaned = load_and_clean_data(filename, min_date)
+
+    if "Error" in cleaned.columns:
+        # If there was an error loading the data, we cannot proceed.
+        # Consider how to propagate this error. For now, returning empty results.
+        return {
+            "simulated_durations": [],
+            "percentiles": {},
+            "percentile_dates": {},
+            "num_work_items": num_work_items,
+            "project": project,
+            "num_iterations": num_iterations,
+            "min_date": min_date,
+            "start_date": None,
+        }
+
     if project is not None:
-        cycle_times = cleaned[cleaned["grp"] == project]["cycle_time_days"].values
+        cycle_times = cleaned[cleaned["grp"] == project]["cycle_time_days"].to_numpy()
     else:
-        cycle_times = cleaned["cycle_time_days"].values
+        cycle_times = cleaned["cycle_time_days"].to_numpy()
+
+    # Handle start_date to return it even if simulation fails
+    if start_date is None:
+        start_ts = pd.Timestamp.today().normalize()
+    else:
+        start_ts = pd.Timestamp(start_date)
+
+    # If, after filtering, there is no data, we cannot run a simulation.
+    if len(cycle_times) == 0:
+        return {
+            "simulated_durations": [],
+            "percentiles": {},
+            "percentile_dates": {},
+            "num_work_items": num_work_items,
+            "project": project,
+            "num_iterations": num_iterations,
+            "min_date": min_date,
+            "start_date": (
+                start_ts.date().isoformat() if start_ts is not pd.NaT else None
+            ),
+        }
 
     def cumulative_sum(total_work_items, cycle_times, selector):
         total = [0]
@@ -71,11 +127,6 @@ def forecast_days_for_work_items(
     }
 
     # Handle start_date
-    if start_date is None:
-        start_ts = pd.Timestamp.today().normalize()
-    else:
-        start_ts = pd.Timestamp(start_date)
-
     percentile_dates = {
         k: (start_ts + pd.Timedelta(days=v)).date().isoformat()
         for k, v in percentiles.items()
@@ -89,7 +140,7 @@ def forecast_days_for_work_items(
         "project": project,
         "num_iterations": num_iterations,
         "min_date": min_date,
-        "start_date": start_ts.date().isoformat(),
+        "start_date": start_ts.date().isoformat() if start_ts is not pd.NaT else None,
     }
 
 
@@ -123,16 +174,43 @@ def forecast_work_items_in_period(
             - 'min_date': str, minimum date used for filtering
     """
     # Load and clean data
-    df = pd.read_csv(filename, parse_dates=["created_date"])
-    cleaned = df[(df["created_date"] > min_date) & (df["cycle_time_days"] > -1)]
-    if project is not None:
-        cycle_times = cleaned[cleaned["grp"] == project]["cycle_time_days"].values
-    else:
-        cycle_times = cleaned["cycle_time_days"].values
+    cleaned = load_and_clean_data(filename, min_date)
 
+    if "Error" in cleaned.columns:
+        # Propagate error if data loading fails
+        return {
+            "simulated_work_items": [],
+            "percentiles": {},
+            "start_date": None,
+            "end_date": None,
+            "project": project,
+            "num_iterations": num_iterations,
+            "min_date": min_date,
+        }
+
+    if project is not None:
+        cycle_times = cleaned[cleaned["grp"] == project]["cycle_time_days"].to_numpy()
+    else:
+        cycle_times = cleaned["cycle_time_days"].to_numpy()
+
+    # Handle dates to return them even if simulation fails
     start_ts = pd.Timestamp(start_date)
     end_ts = pd.Timestamp(end_date)
     max_days = (end_ts - start_ts).days
+
+    # If, after filtering, there is no data, we cannot run a simulation.
+    if len(cycle_times) == 0:
+        return {
+            "simulated_work_items": [],
+            "percentiles": {},
+            "start_date": (
+                start_ts.date().isoformat() if start_ts is not pd.NaT else None
+            ),
+            "end_date": end_ts.date().isoformat() if end_ts is not pd.NaT else None,
+            "project": project,
+            "num_iterations": num_iterations,
+            "min_date": min_date,
+        }
 
     def simulate_days(num_of_iterations, max_days, cycle_times):
         totals = []
@@ -155,8 +233,8 @@ def forecast_work_items_in_period(
     return {
         "simulated_work_items": simulated_work_items,
         "percentiles": percentiles,
-        "start_date": start_ts.date().isoformat(),
-        "end_date": end_ts.date().isoformat(),
+        "start_date": start_ts.date().isoformat() if start_ts is not pd.NaT else None,
+        "end_date": end_ts.date().isoformat() if end_ts is not pd.NaT else None,
         "project": project,
         "num_iterations": num_iterations,
         "min_date": min_date,
