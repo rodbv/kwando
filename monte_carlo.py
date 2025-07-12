@@ -18,7 +18,7 @@ def get_next_business_day() -> datetime.date:
 
 def forecast_days_for_work_items(
     num_work_items: int,
-    filename: str = "notebooks/data.csv",
+    filename: str = "data/data.csv",
     project: Optional[int] = None,
     num_iterations: int = 5000,
     min_date: str = "2018-01-01",
@@ -96,7 +96,7 @@ def forecast_days_for_work_items(
 def forecast_work_items_in_period(
     start_date: str,
     end_date: str,
-    filename: str = "notebooks/data.csv",
+    filename: str = "data/data.csv",
     project: Optional[int] = None,
     num_iterations: int = 5000,
     min_date: str = "2018-01-01",

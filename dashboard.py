@@ -24,10 +24,61 @@ how_many_button = pn.widgets.Button(
     name="How many items?", button_type="primary", width=200
 )
 
+# Add data source button and state management
+data_source_button = pn.widgets.Button(
+    name="📊 Data Source", button_type="default", width=200
+)
+
+# File picker widget and default file text
+file_input = pn.widgets.FileInput(name="Upload Custom CSV")
+default_file_text = pn.pane.Markdown("**Current data:** data/data.csv (default)")
+
+# Global state for data source
+current_data_file = "data/data.csv"
+data_preview_df = None
+
+
+# Function to load and preview data
+def load_data_preview(filename="data/data.csv"):
+    try:
+        df = pd.read_csv(filename, parse_dates=["created_date"])
+        # Clean the data for preview (same as in monte_carlo.py)
+        cleaned = df[(df["created_date"] > "2018-01-01") & (df["cycle_time_days"] > -1)]
+        return cleaned.head(100)  # Show first 100 rows for preview
+    except Exception as e:
+        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
+
+
+# Initialize data preview
+data_preview_df = load_data_preview()
+
+
+# Function to handle file upload and update global state
+def handle_file_upload(event):
+    global current_data_file, data_preview_df
+    if event.new is not None and len(event.new) > 0:
+        # Save uploaded file
+        with open("temp_upload.csv", "wb") as f:
+            f.write(event.new)
+        current_data_file = "temp_upload.csv"
+        # Update preview
+        data_preview_df = load_data_preview(current_data_file)
+        # Update the text
+        default_file_text.object = f"**Current data:** {current_data_file} (uploaded)"
+    else:
+        # Reset to default
+        current_data_file = "data/data.csv"
+        data_preview_df = load_data_preview(current_data_file)
+        default_file_text.object = "**Current data:** data/data.csv (default)"
+
+
+# Link file input to handler
+file_input.param.watch(handle_file_upload, "value")
+
 # Create a parameter to track which simulation is active
 active_simulation = pn.widgets.Select(
     name="Active Simulation",
-    options=["When will it be done?", "How many items?"],
+    options=["When will it be done?", "How many items?", "Data Source"],
     value="When will it be done?",
     visible=False,  # Hide this control, we'll use it just for state
 )
@@ -52,8 +103,14 @@ def set_how_many_active(event):
     active_simulation.value = "How many items?"
 
 
+def set_data_source_active(event):
+    help_visible.value = False  # Reset help toggle
+    active_simulation.value = "Data Source"
+
+
 when_button.on_click(set_when_active)
 how_many_button.on_click(set_how_many_active)
+data_source_button.on_click(set_data_source_active)
 
 
 # Update button appearance based on active simulation
@@ -64,6 +121,9 @@ def update_button_styles(active, show_help):
     )
     how_many_button.button_type = (
         "primary" if active == "How many items?" and not show_help else "default"
+    )
+    data_source_button.button_type = (
+        "primary" if active == "Data Source" and not show_help else "default"
     )
     return ""
 
@@ -106,7 +166,7 @@ def update_work_items_results(num_cards, start_date):
     try:
         results = forecast_days_for_work_items(
             num_work_items=num_cards,
-            filename="data/data.csv",
+            filename=current_data_file,
             num_iterations=5000,
             start_date=start_date,
         )
@@ -141,7 +201,7 @@ def update_period_results(start_date, end_date):
         results = forecast_work_items_in_period(
             start_date=start_date,
             end_date=end_date,
-            filename="data/data.csv",
+            filename=current_data_file,
             num_iterations=5000,
         )
 
@@ -251,33 +311,67 @@ def get_main_content(show_help, sim_type):
     else:
         if sim_type == "When will it be done?":
             content = pn.Column(
-                "Adjust the parameters below to forecast completion dates:",
-                num_cards_slider,
-                start_date_picker,
+                pn.Row(
+                    pn.Column(
+                        "### Parameters",
+                        num_cards_slider,
+                        start_date_picker,
+                        sizing_mode="stretch_width",
+                    ),
+                ),
                 work_items_results,
             )
-            title = "Work Items Simulation"
-        else:
+            title = "When will these work items be done?"
+        elif sim_type == "How many items?":
             content = pn.Column(
-                "Adjust the date range to forecast work items completion:",
-                period_start_date,
-                period_end_date,
+                pn.Row(
+                    pn.Column(
+                        "### Parameters",
+                        period_start_date,
+                        period_end_date,
+                        sizing_mode="stretch_width",
+                    ),
+                ),
                 period_results,
             )
-            title = "Time Period Simulation"
+            title = "How many items can we complete?"
+        else:  # Data Source
+            content = pn.Column(
+                pn.Row(
+                    pn.Column(
+                        "### Data Source Configuration",
+                        default_file_text,
+                        file_input,
+                        pn.pane.Markdown(
+                            "**Upload a CSV file with the following columns:**"
+                        ),
+                        pn.pane.Markdown(
+                            "- `id`: Unique identifier for each work item"
+                        ),
+                        pn.pane.Markdown("- `grp`: Group/project identifier"),
+                        pn.pane.Markdown(
+                            "- `cycle_time_days`: Time taken to complete the work item"
+                        ),
+                        pn.pane.Markdown(
+                            "- `created_date`: When the work item was created"
+                        ),
+                        sizing_mode="stretch_width",
+                    ),
+                ),
+                pn.layout.Spacer(height=20),
+                pn.pane.Markdown("### Data Preview (First 100 rows)"),
+                pn.pane.DataFrame(data_preview_df, name="Data Preview", height=400),
+            )
+            title = "Data Source"
 
     # Wrap content in a card with smooth transition
     return pn.Card(
-        content,
-        title=title,
-        collapsed=False,
-        sizing_mode="stretch_width",
-        styles={
-            "border": "0px",  # Remove card border
-            "box-shadow": "none",  # Remove shadow
-            "transition": "opacity 0.3s ease-in-out",  # Smooth fade transition
-            "background": "transparent",  # Transparent background
-        },
+        pn.Column(
+            pn.pane.Markdown(f"# {title}"),
+            content,
+        ),
+        styles={"border": "1px solid #e2e8f0", "border-radius": "8px"},
+        margin=(10, 0),
     )
 
 
@@ -286,6 +380,8 @@ button_column = pn.Column(
     when_button,
     pn.layout.Spacer(height=20),  # Add 20px space between buttons
     how_many_button,
+    pn.layout.Spacer(height=20),  # Add space between buttons and data source button
+    data_source_button,
 )
 
 # About section for sidebar
