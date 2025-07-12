@@ -4,7 +4,6 @@ from monte_carlo import (
     forecast_days_for_work_items,
     forecast_work_items_in_period,
     get_next_business_day,
-    load_and_clean_data,
 )
 from datetime import datetime, timedelta
 import argparse
@@ -63,6 +62,35 @@ current_data_file = "data/data.csv"
 
 def get_current_data_file():
     return file_selector.value
+
+
+# Add local load_and_clean_data function
+def load_and_clean_data(filename: str, selected_tags=None) -> pd.DataFrame:
+    """
+    Load and clean data from a CSV file.
+    - Reads the specified CSV file.
+    - Filters out records with a cycle_time_days <= 0.
+    - If selected_tags is provided, filters rows to include:
+      * Rows that have ANY of the selected tags
+      * Rows with no tags (empty or NaN in tags column)
+    """
+    try:
+        df = pd.read_csv(filename)
+        cleaned = df[df["cycle_time_days"] > 0].copy()
+        if selected_tags and len(selected_tags) > 0 and "tags" in cleaned.columns:
+            include_mask = pd.Series([False] * len(cleaned), index=cleaned.index)
+            for idx, row in cleaned.iterrows():
+                tags_str = row.get("tags", "")
+                if pd.isna(tags_str) or str(tags_str).strip() == "":
+                    include_mask[idx] = True
+                    continue
+                row_tags = [tag.strip() for tag in str(tags_str).split(",")]
+                if any(tag in selected_tags for tag in row_tags):
+                    include_mask[idx] = True
+            cleaned = cleaned[include_mask].copy()
+        return cleaned
+    except Exception as e:
+        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
 
 # Function to calculate and display data statistics
@@ -363,21 +391,12 @@ period_end_date = pn.widgets.DatePicker(
 
 # Function to update results based on work items simulation
 def update_work_items_results(num_cards):
-    # Collect selected tags
-    selected_tags = []
-    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
-        checkbox_row = tag_checkboxes[1]
-        if isinstance(checkbox_row, Row):
-            for checkbox in checkbox_row:
-                if isinstance(checkbox, Checkbox) and checkbox.value:
-                    selected_tags.append(checkbox.name)
-
     try:
+        # DataFrame is already filtered by tags in data_preview_pane.object
         results = forecast_days_for_work_items(
+            df=data_preview_pane.object,
             num_work_items=num_cards,
-            filename=current_data_file,
             num_iterations=5000,
-            selected_tags=selected_tags,
         )
 
         # Check if the results are valid before proceeding
@@ -410,22 +429,13 @@ def update_work_items_results(num_cards):
 
 # Function to update results based on time period simulation
 def update_period_results(start_date, end_date):
-    # Collect selected tags
-    selected_tags = []
-    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
-        checkbox_row = tag_checkboxes[1]
-        if isinstance(checkbox_row, Row):
-            for checkbox in checkbox_row:
-                if isinstance(checkbox, Checkbox) and checkbox.value:
-                    selected_tags.append(checkbox.name)
-
     try:
+        # DataFrame is already filtered by tags in data_preview_pane.object
         results = forecast_work_items_in_period(
+            df=data_preview_pane.object,
             start_date=start_date,
             end_date=end_date,
-            filename=current_data_file,
             num_iterations=5000,
-            selected_tags=selected_tags,
         )
 
         # Check if the results are valid before proceeding
