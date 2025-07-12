@@ -342,25 +342,20 @@ def get_main_content(show_help, sim_type):
                         "### Data Source Configuration",
                         default_file_text,
                         file_input,
-                        pn.pane.Markdown(
-                            "**Upload a CSV file with the following columns:**"
-                        ),
-                        pn.pane.Markdown(
-                            "- `id`: Unique identifier for each work item"
-                        ),
-                        pn.pane.Markdown("- `grp`: Group/project identifier"),
-                        pn.pane.Markdown(
-                            "- `cycle_time_days`: Time taken to complete the work item"
-                        ),
-                        pn.pane.Markdown(
-                            "- `created_date`: When the work item was created"
-                        ),
                         sizing_mode="stretch_width",
                     ),
                 ),
                 pn.layout.Spacer(height=20),
                 pn.pane.Markdown("### Data Preview (First 100 rows)"),
                 pn.pane.DataFrame(data_preview_df, name="Data Preview", height=400),
+                pn.layout.Spacer(height=30),
+                pn.pane.Markdown("**Upload a CSV file with the following columns:**"),
+                pn.pane.Markdown("- `id`: Unique identifier for each work item"),
+                pn.pane.Markdown("- `grp`: Group/project identifier"),
+                pn.pane.Markdown(
+                    "- `cycle_time_days`: Time taken to complete the work item"
+                ),
+                pn.pane.Markdown("- `created_date`: When the work item was created"),
             )
             title = "Data Source"
 
