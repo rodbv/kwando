@@ -21,16 +21,16 @@ ACCENT_COLOR_DARK = "#90cdf4"  # Lighter blue for dark mode
 
 # Create widgets for both simulation types
 when_button = pn.widgets.Button(
-    name="When will it be done?", button_type="primary", width=200
+    name="⏰ When will it be done?", button_type="primary", width=200
 )
 
 how_many_button = pn.widgets.Button(
-    name="How many items?", button_type="primary", width=200
+    name="📊 How many items?", button_type="primary", width=200
 )
 
 # Add data source button and state management
 data_source_button = pn.widgets.Button(
-    name="📊 Data Source", button_type="default", width=200
+    name="📁 Data Source", button_type="default", width=200
 )
 
 # File picker widget and default file text
