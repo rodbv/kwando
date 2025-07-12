@@ -130,7 +130,17 @@ def handle_file_selection(event):
         tag_checkboxes.visible = False
         return
 
-    full_df = load_and_clean_data(file_selector.value)
+    # Collect selected tags from checkboxes
+    selected_tags = []
+    if tag_checkboxes.visible and len(tag_checkboxes) > 1:  # Skip the header text
+        checkbox_row = tag_checkboxes[1]  # The row containing checkboxes
+        if hasattr(checkbox_row, "__iter__"):
+            for checkbox in checkbox_row:
+                if hasattr(checkbox, "value") and checkbox.value:
+                    selected_tags.append(checkbox.name)
+
+    # Load data with tag filtering
+    full_df = load_and_clean_data(file_selector.value, selected_tags=selected_tags)
     data_preview_pane.object = (
         full_df.head(100) if "Error" not in full_df.columns else full_df
     )
@@ -147,6 +157,15 @@ def handle_file_selection(event):
                 all_tags.update(tags)
 
         if all_tags:
+            # Get currently selected tags before clearing
+            currently_selected = set()
+            if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+                checkbox_row = tag_checkboxes[1]
+                if hasattr(checkbox_row, "__iter__"):
+                    for checkbox in checkbox_row:
+                        if hasattr(checkbox, "value") and checkbox.value:
+                            currently_selected.add(checkbox.name)
+
             # Clear existing checkboxes and create new ones
             tag_checkboxes.clear()
             tag_checkboxes.append(pn.pane.Markdown("**Select tags to filter by:**"))
@@ -154,7 +173,11 @@ def handle_file_selection(event):
             # Create checkboxes for each tag, laid out in a row
             checkbox_row = pn.Row()
             for tag in sorted(all_tags):
-                checkbox = pn.widgets.Checkbox(name=tag, value=False)
+                # Preserve the checked state if this tag was previously selected
+                is_checked = tag in currently_selected
+                checkbox = make_checkbox_reactive(
+                    pn.widgets.Checkbox(name=tag, value=is_checked)
+                )
                 checkbox_row.append(checkbox)
 
             tag_checkboxes.append(checkbox_row)
@@ -167,6 +190,19 @@ def handle_file_selection(event):
 
 
 file_selector.param.watch(handle_file_selection, "value")
+
+
+def handle_tag_selection(event):
+    """Handle changes to tag checkboxes and update data preview"""
+    if file_selector.value:
+        handle_file_selection(None)  # Re-run file selection with current tag state
+
+
+# Function to make checkboxes reactive (will be called when creating checkboxes)
+def make_checkbox_reactive(checkbox):
+    checkbox.param.watch(handle_tag_selection, "value")
+    return checkbox
+
 
 # Create a parameter to track which simulation is active
 active_simulation = pn.widgets.Select(
@@ -256,12 +292,22 @@ period_end_date = pn.widgets.DatePicker(
 
 # Function to update results based on work items simulation
 def update_work_items_results(num_cards, start_date):
+    # Collect selected tags
+    selected_tags = []
+    if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+        checkbox_row = tag_checkboxes[1]
+        if hasattr(checkbox_row, "__iter__"):
+            for checkbox in checkbox_row:
+                if hasattr(checkbox, "value") and checkbox.value:
+                    selected_tags.append(checkbox.name)
+
     try:
         results = forecast_days_for_work_items(
             num_work_items=num_cards,
             filename=current_data_file,
             num_iterations=5000,
             start_date=start_date,
+            selected_tags=selected_tags,
         )
 
         # Check if the results are valid before proceeding
@@ -294,12 +340,22 @@ def update_work_items_results(num_cards, start_date):
 
 # Function to update results based on time period simulation
 def update_period_results(start_date, end_date):
+    # Collect selected tags
+    selected_tags = []
+    if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+        checkbox_row = tag_checkboxes[1]
+        if hasattr(checkbox_row, "__iter__"):
+            for checkbox in checkbox_row:
+                if hasattr(checkbox, "value") and checkbox.value:
+                    selected_tags.append(checkbox.name)
+
     try:
         results = forecast_work_items_in_period(
             start_date=start_date,
             end_date=end_date,
             filename=current_data_file,
             num_iterations=5000,
+            selected_tags=selected_tags,
         )
 
         # Check if the results are valid before proceeding
@@ -428,6 +484,7 @@ def get_main_content(show_help, sim_type):
                     pn.Column(
                         "### Parameters",
                         file_selector,
+                        tag_checkboxes,  # Add tag filtering to simulation pages
                         num_cards_slider,
                         start_date_picker,
                         sizing_mode="stretch_width",
@@ -442,6 +499,7 @@ def get_main_content(show_help, sim_type):
                     pn.Column(
                         "### Parameters",
                         file_selector,
+                        tag_checkboxes,  # Add tag filtering to simulation pages
                         period_start_date,
                         period_end_date,
                         sizing_mode="stretch_width",

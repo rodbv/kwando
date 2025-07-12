@@ -16,7 +16,9 @@ def get_next_business_day() -> date:
     return next_day.date()
 
 
-def load_and_clean_data(filename: str, min_date: str = "2018-01-01") -> pd.DataFrame:
+def load_and_clean_data(
+    filename: str, min_date: str = "2018-01-01", selected_tags: Optional[list] = None
+) -> pd.DataFrame:
     """
     Load and clean data from a CSV file.
 
@@ -24,6 +26,9 @@ def load_and_clean_data(filename: str, min_date: str = "2018-01-01") -> pd.DataF
     - Parses 'created_date' column.
     - Filters out records with a created_date before min_date.
     - Filters out records with a cycle_time_days <= 0.
+    - If selected_tags is provided, filters rows to include:
+      * Rows that have ANY of the selected tags
+      * Rows with no tags (empty or NaN in tags column)
     """
     try:
         df = pd.read_csv(filename, parse_dates=["created_date"])
@@ -31,6 +36,28 @@ def load_and_clean_data(filename: str, min_date: str = "2018-01-01") -> pd.DataF
         cleaned = df[
             (df["created_date"] > min_date) & (df["cycle_time_days"] > 0)
         ].copy()
+
+        # Apply tag filtering if tags are selected
+        if selected_tags and "tags" in cleaned.columns:
+            # Create a mask for rows to include
+            include_mask = pd.Series([False] * len(cleaned), index=cleaned.index)
+
+            for idx, row in cleaned.iterrows():
+                tags_str = row.get("tags", "")
+
+                # Always include rows with no tags
+                if pd.isna(tags_str) or str(tags_str).strip() == "":
+                    include_mask[idx] = True
+                    continue
+
+                # Check if row has ANY of the selected tags
+                row_tags = [tag.strip() for tag in str(tags_str).split(",")]
+                if any(tag in selected_tags for tag in row_tags):
+                    include_mask[idx] = True
+
+            # Apply the filter
+            cleaned = cleaned[include_mask].copy()
+
         return cleaned
     except Exception as e:
         # Return an empty DataFrame with an Error column if loading fails
@@ -44,6 +71,7 @@ def forecast_days_for_work_items(
     num_iterations: int = 5000,
     min_date: str = "2018-01-01",
     start_date: Optional[str] = None,
+    selected_tags: Optional[list] = None,
 ) -> Dict[str, Any]:
     """
     Forecast the number of days required to finish the next `num_work_items` work items using Monte Carlo simulation.
@@ -55,6 +83,7 @@ def forecast_days_for_work_items(
         num_iterations (int): Number of Monte Carlo simulation runs.
         min_date (str): Minimum created_date to include (YYYY-MM-DD).
         start_date (str, optional): Start date for the forecast (YYYY-MM-DD). Defaults to today.
+        selected_tags (Optional[list]): List of tags to filter by. If None, no tag filtering is applied.
 
     Returns:
         Dict[str, Any]: Dictionary with simulation results and parameters:
@@ -68,7 +97,7 @@ def forecast_days_for_work_items(
             - 'start_date': str, start date used for forecast
     """
     # Load and clean data
-    cleaned = load_and_clean_data(filename, min_date)
+    cleaned = load_and_clean_data(filename, min_date, selected_tags)
 
     if "Error" in cleaned.columns:
         # If there was an error loading the data, we cannot proceed.
@@ -151,6 +180,7 @@ def forecast_work_items_in_period(
     project: Optional[int] = None,
     num_iterations: int = 5000,
     min_date: str = "2018-01-01",
+    selected_tags: Optional[list] = None,
 ) -> Dict[str, Any]:
     """
     Forecast how many work items can be finished between start_date and end_date using Monte Carlo simulation.
@@ -162,6 +192,7 @@ def forecast_work_items_in_period(
         project (Optional[int]): Project group to filter on (column 'grp'). If None, use all projects.
         num_iterations (int): Number of Monte Carlo simulation runs.
         min_date (str): Minimum created_date to include (YYYY-MM-DD).
+        selected_tags (Optional[list]): List of tags to filter by. If None, no tag filtering is applied.
 
     Returns:
         Dict[str, Any]: Dictionary with simulation results and parameters:
@@ -174,7 +205,7 @@ def forecast_work_items_in_period(
             - 'min_date': str, minimum date used for filtering
     """
     # Load and clean data
-    cleaned = load_and_clean_data(filename, min_date)
+    cleaned = load_and_clean_data(filename, min_date, selected_tags)
 
     if "Error" in cleaned.columns:
         # Propagate error if data loading fails
