@@ -43,6 +43,9 @@ file_selector = pn.widgets.Select(
     name="Choose CSV file", options=csv_files, value=csv_files[0] if csv_files else None
 )
 
+# Dynamic tag checkboxes (will be created based on loaded data)
+tag_checkboxes = pn.Column(name="Tag Filters", visible=False)
+
 # Global state for data source
 current_data_file = "data/data.csv"
 
@@ -123,13 +126,44 @@ def handle_file_selection(event):
         )
         data_stats_pane.object = "### Data Statistics\n\nNo file selected."
         default_file_text.object = "**No data file selected.**"
+        # Hide tag checkboxes if no file selected
+        tag_checkboxes.visible = False
         return
+
     full_df = load_and_clean_data(file_selector.value)
     data_preview_pane.object = (
         full_df.head(100) if "Error" not in full_df.columns else full_df
     )
     data_stats_pane.object = get_data_stats_md(full_df)
     default_file_text.object = f"**Current data:** {file_selector.value}"
+
+    # Handle dynamic tag checkboxes
+    if "Error" not in full_df.columns and "tags" in full_df.columns:
+        # Extract unique tags from the data
+        all_tags = set()
+        for tags_str in full_df["tags"].dropna():
+            if tags_str.strip():  # Skip empty strings
+                tags = [tag.strip() for tag in tags_str.split(",")]
+                all_tags.update(tags)
+
+        if all_tags:
+            # Clear existing checkboxes and create new ones
+            tag_checkboxes.clear()
+            tag_checkboxes.append(pn.pane.Markdown("**Select tags to filter by:**"))
+
+            # Create checkboxes for each tag, laid out in a row
+            checkbox_row = pn.Row()
+            for tag in sorted(all_tags):
+                checkbox = pn.widgets.Checkbox(name=tag, value=False)
+                checkbox_row.append(checkbox)
+
+            tag_checkboxes.append(checkbox_row)
+            tag_checkboxes.visible = True
+        else:
+            tag_checkboxes.visible = False
+    else:
+        # No tags column or error loading data
+        tag_checkboxes.visible = False
 
 
 file_selector.param.watch(handle_file_selection, "value")
@@ -423,6 +457,8 @@ def get_main_content(show_help, sim_type):
                         "### Data Source Configuration",
                         default_file_text,
                         file_selector,
+                        pn.layout.Spacer(height=10),
+                        tag_checkboxes,  # Use the dynamic tag_checkboxes
                         sizing_mode="stretch_width",
                     ),
                 ),
