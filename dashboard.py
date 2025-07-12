@@ -60,7 +60,20 @@ def get_data_stats_md(df):
         return "### Data Statistics\n\nCould not calculate statistics. Please check the data file."
 
     try:
-        # Perform calculations
+        # Load the original unfiltered data to count invalid rows
+        if not file_selector.value:
+            return "### Data Statistics\n\nNo file selected."
+
+        original_df = pd.read_csv(file_selector.value, parse_dates=["created_date"])
+
+        # Count invalid rows (cycle_time_days <= 0)
+        invalid_cycle_time = len(original_df[original_df["cycle_time_days"] <= 0])
+
+        # Count rows before min_date (2018-01-01)
+        min_date_filter = pd.Timestamp("2018-01-01")
+        invalid_date = len(original_df[original_df["created_date"] <= min_date_filter])
+
+        # Perform calculations on the filtered data
         min_date = df["created_date"].min().strftime("%Y-%m-%d")
         max_date = df["created_date"].max().strftime("%Y-%m-%d")
         min_cycle_time = df["cycle_time_days"].min()
@@ -68,6 +81,7 @@ def get_data_stats_md(df):
         median_cycle_time = df["cycle_time_days"].median()
         total_items = len(df)
         num_groups = df["grp"].nunique()
+        total_original = len(original_df)
 
         # Format as a Markdown string
         stats_md = f"""
@@ -78,6 +92,12 @@ def get_data_stats_md(df):
 - **Min Cycle Time:** `{min_cycle_time}` days
 - **Max Cycle Time:** `{max_cycle_time}` days
 - **Median Cycle Time:** `{median_cycle_time:.1f}` days
+
+### Data Quality
+- **Original Rows:** {total_original}
+- **Invalid Cycle Times (≤0):** {invalid_cycle_time}
+- **Rows Before 2018-01-01:** {invalid_date}
+- **Valid Rows Used:** {total_items}
 """
         return stats_md
     except Exception as e:
@@ -232,11 +252,27 @@ def get_data_source_info(selected_file, tags_visible):
 
 
 def handle_tag_selection(event):
-    """Handle changes to tag checkboxes and update data preview"""
-    if file_selector.value:
-        handle_file_selection(None)  # Re-run file selection with current tag state
-        # Force update of data source info by triggering a parameter change
-        # This will make the reactive data source info update
+    """Handle changes to tag checkboxes and update only the data preview and stats"""
+    if not file_selector.value:
+        return
+
+    # Collect selected tags
+    selected_tags = []
+    if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+        checkbox_row = tag_checkboxes[1]
+        if hasattr(checkbox_row, "__iter__"):
+            for checkbox in checkbox_row:
+                if hasattr(checkbox, "value") and checkbox.value:
+                    selected_tags.append(checkbox.name)
+
+    # Load filtered data without recreating checkboxes
+    filtered_df = load_and_clean_data(file_selector.value, selected_tags=selected_tags)
+
+    # Update only the data preview and stats, not the entire page
+    data_preview_pane.object = (
+        filtered_df.head(100) if "Error" not in filtered_df.columns else filtered_df
+    )
+    data_stats_pane.object = get_data_stats_md(filtered_df)
 
 
 # Function to make checkboxes reactive (will be called when creating checkboxes)

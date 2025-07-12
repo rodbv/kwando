@@ -38,7 +38,7 @@ def load_and_clean_data(
         ].copy()
 
         # Apply tag filtering if tags are selected
-        if selected_tags and "tags" in cleaned.columns:
+        if selected_tags and len(selected_tags) > 0 and "tags" in cleaned.columns:
             # Create a mask for rows to include
             include_mask = pd.Series([False] * len(cleaned), index=cleaned.index)
 
