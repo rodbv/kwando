@@ -2,9 +2,14 @@ import panel as pn
 import pandas as pd
 from monte_carlo import forecast_days_for_work_items
 from datetime import datetime, timedelta
+import argparse
 
-# Initialize Panel
-pn.extension()
+# Initialize Panel with template support
+pn.extension("tabulator", "ace")
+
+# Set theme colors
+ACCENT_COLOR = "#2c5282"  # A more elegant navy blue
+ACCENT_COLOR_DARK = "#90cdf4"  # Lighter blue for dark mode
 
 
 def get_next_business_day():
@@ -91,19 +96,58 @@ def get_results(num_cards, start_date):
 # Create a dynamic Panel pane for displaying results
 results_pane = pn.bind(pn.pane.Markdown, get_results)
 
-# Create the dashboard layout
-dashboard = pn.Column(
-    pn.pane.Markdown("# Monte Carlo Work Item Completion Forecast"),
-    pn.pane.Markdown(
-        "Adjust the parameters below to see how completion dates change based on the number of work items and start date."
-    ),
+# Sidebar content
+sidebar = [
+    "## Simulation Parameters",
+    "Adjust the parameters below to update the forecast:",
     num_cards_slider,
     start_date_picker,
+    "---",
+    "### About",
+    """This dashboard uses Monte Carlo simulation to forecast completion dates based on historical data.
+    The forecast shows different confidence levels for when the work items will be completed.""",
+]
+
+# Main content
+main = [
+    pn.pane.Markdown("## Work Item Completion Forecast"),
+    pn.pane.Markdown(
+        "This simulation helps answer the question 'When will it be done?' by analyzing historical completion data and running Monte Carlo simulations to provide date ranges at different confidence levels."
+    ),
     results_pane,
-    width=800,
-    margin=(0, 0, 20, 0),  # Add some bottom margin for spacing
+]
+
+# Create the template with dark mode support
+template = pn.template.FastListTemplate(
+    title="When will it be done?",
+    sidebar=sidebar,
+    main=main,
+    accent_base_color=ACCENT_COLOR,
+    header_background=ACCENT_COLOR,
+    theme_toggle=True,
+    theme="default",  # Changed from "light" to "default"
 )
 
-# Serve the dashboard
+
+# Update accent color based on theme
+def update_theme(event):
+    if event.new == "dark":
+        template.accent_base_color = ACCENT_COLOR_DARK
+        template.header_background = ACCENT_COLOR_DARK
+    else:
+        template.accent_base_color = ACCENT_COLOR
+        template.header_background = ACCENT_COLOR
+
+
+template.param.watch(update_theme, "theme")
+
+# Mark the template as servable
+template.servable()
+
+# Add development mode support
 if __name__ == "__main__":
-    dashboard.show()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dev", action="store_true", help="Run in development mode")
+    args = parser.parse_args()
+
+    template.show(port=5006, dev=args.dev)
