@@ -37,20 +37,58 @@ default_file_text = pn.pane.Markdown("**Current data:** data/data.csv (default)"
 current_data_file = "data/data.csv"
 
 
-# Function to load and preview data
-def load_data_preview(filename="data/data.csv"):
+# Function to load and clean data from a file
+def load_and_clean_data(filename="data/data.csv"):
     try:
         df = pd.read_csv(filename, parse_dates=["created_date"])
-        # Clean the data for preview (same as in monte_carlo.py)
-        cleaned = df[(df["created_date"] > "2018-01-01") & (df["cycle_time_days"] > -1)]
-        return cleaned.head(100)  # Show first 100 rows for preview
+        # Clean the data
+        cleaned = df[
+            (df["created_date"] > "2018-01-01") & (df["cycle_time_days"] > -1)
+        ].copy()
+        return cleaned
     except Exception as e:
         return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
 
+# Function to calculate and display data statistics
+def get_data_stats_md(df):
+    if "Error" in df.columns or df.empty:
+        return "### Data Statistics\n\nCould not calculate statistics. Please check the data file."
+
+    try:
+        # Perform calculations
+        min_date = df["created_date"].min().strftime("%Y-%m-%d")
+        max_date = df["created_date"].max().strftime("%Y-%m-%d")
+        min_cycle_time = df["cycle_time_days"].min()
+        max_cycle_time = df["cycle_time_days"].max()
+        median_cycle_time = df["cycle_time_days"].median()
+        total_items = len(df)
+        num_groups = df["grp"].nunique()
+
+        # Format as a Markdown string
+        stats_md = f"""
+### Data Statistics
+- **Total Work Items:** {total_items}
+- **Number of Groups:** {num_groups}
+- **Date Range:** {min_date} to {max_date}
+- **Min Cycle Time:** `{min_cycle_time}` days
+- **Max Cycle Time:** `{max_cycle_time}` days
+- **Median Cycle Time:** `{median_cycle_time:.1f}` days
+"""
+        return stats_md
+    except Exception as e:
+        return (
+            f"### Error Calculating Stats\n\nCould not calculate statistics: {str(e)}"
+        )
+
+
 # The data preview pane, created once and updated reactively
+initial_data = load_and_clean_data()
 data_preview_pane = pn.pane.DataFrame(
-    load_data_preview(), name="Data Preview", height=400
+    initial_data.head(100), name="Data Preview", height=400, sizing_mode="stretch_width"
+)
+data_stats_pane = pn.pane.Markdown(
+    get_data_stats_md(initial_data), sizing_mode="stretch_width"
 )
 
 
@@ -62,14 +100,25 @@ def handle_file_upload(event):
         with open("temp_upload.csv", "wb") as f:
             f.write(event.new)
         current_data_file = "temp_upload.csv"
+        # Load new data
+        full_df = load_and_clean_data(current_data_file)
         # Update preview pane reactively
-        data_preview_pane.object = load_data_preview(current_data_file)
+        data_preview_pane.object = (
+            full_df.head(100) if "Error" not in full_df.columns else full_df
+        )
+        data_stats_pane.object = get_data_stats_md(full_df)
         # Update the text
         default_file_text.object = f"**Current data:** {current_data_file} (uploaded)"
     else:
         # Reset to default
         current_data_file = "data/data.csv"
-        data_preview_pane.object = load_data_preview(current_data_file)
+        # Load default data
+        full_df = load_and_clean_data(current_data_file)
+        # Update preview pane reactively
+        data_preview_pane.object = (
+            full_df.head(100) if "Error" not in full_df.columns else full_df
+        )
+        data_stats_pane.object = get_data_stats_md(full_df)
         default_file_text.object = "**Current data:** data/data.csv (default)"
 
 
@@ -347,8 +396,15 @@ def get_main_content(show_help, sim_type):
                     ),
                 ),
                 pn.layout.Spacer(height=20),
-                pn.pane.Markdown("### Data Preview (First 100 rows)"),
-                data_preview_pane,  # Use the reactive pane here
+                pn.Row(
+                    pn.Column(
+                        pn.pane.Markdown("### Data Preview (First 100 rows)"),
+                        data_preview_pane,
+                        sizing_mode="stretch_width",
+                    ),
+                    data_stats_pane,
+                    sizing_mode="stretch_width",
+                ),
                 pn.layout.Spacer(height=30),
                 pn.pane.Markdown("**Upload a CSV file with the following columns:**"),
                 pn.pane.Markdown("- `id`: Unique identifier for each work item"),
