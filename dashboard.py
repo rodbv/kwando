@@ -24,11 +24,10 @@ def get_next_business_day():
 # Create widgets for both simulation types
 simulation_type = pn.widgets.RadioButtonGroup(
     name="Simulation Type",
-    options=["Forecast by Work Items", "Forecast by Time Period"],
+    options=["When will it be done?", "How many items?"],
     button_type="primary",
-    value="Forecast by Work Items",
+    value="When will it be done?",
     orientation="vertical",  # Make buttons stack vertically
-    button_style="solid",  # Use proper button style
     margin=(0, 0, 15, 0),  # Add margin below each button
 )
 
@@ -153,7 +152,7 @@ period_results = pn.bind(pn.pane.Markdown, get_period_results)
 # Function to show/hide widgets based on simulation type
 @pn.depends(simulation_type.param.value)
 def get_simulation_widgets(sim_type):
-    if sim_type == "Forecast by Work Items":
+    if sim_type == "When will it be done?":
         return pn.Column(
             "## Work Items Simulation",
             "Adjust the parameters below to forecast completion dates:",
