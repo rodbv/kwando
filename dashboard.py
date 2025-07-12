@@ -228,13 +228,13 @@ Monte Carlo simulation is a mathematical technique that helps us make prediction
 ### Learn More
 
 **Books by Daniel Vacanti:**
-- [Actionable Agile Metrics for Predictability](https://actionableagile.com/books/aamfp){target="_blank"} - The definitive guide to flow metrics and analytics
-- [When Will It Be Done?](https://leanpub.com/whenwillitbedone){target="_blank"} - Lean-Agile Forecasting to Answer Your Customers' Most Important Question
-- [Actionable Agile Metrics Volume II](https://actionableagile.com/books/aamfp-vol2){target="_blank"} - Advanced Topics in Predictability
+- <a href="https://actionableagile.com/books/aamfp" target="_blank">Actionable Agile Metrics for Predictability</a> - The definitive guide to flow metrics and analytics
+- <a href="https://leanpub.com/whenwillitbedone" target="_blank">When Will It Be Done?</a> - Lean-Agile Forecasting to Answer Your Customers' Most Important Question
+- <a href="https://actionableagile.com/books/aamfp-vol2" target="_blank">Actionable Agile Metrics Volume II</a> - Advanced Topics in Predictability
 
 **Additional Resources:**
-- [ProKanban.org](https://prokanban.org/){target="_blank"} - Community for learning about Kanban and flow metrics
-- [Why Monte Carlo Simulation?](https://www.youtube.com/watch?v=j1FTNVRkJYg){target="_blank"} - Video explanation by Daniel Vacanti
+- <a href="https://prokanban.org/" target="_blank">ProKanban.org</a> - Community for learning about Kanban and flow metrics
+- <a href="https://www.youtube.com/watch?v=j1FTNVRkJYg" target="_blank">Why Monte Carlo Simulation?</a> - Video explanation by Daniel Vacanti
 
 *Based on concepts from ActionableAgile™ and "Actionable Agile Metrics for Predictability" by Daniel Vacanti.*
 """
