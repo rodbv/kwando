@@ -64,18 +64,16 @@ def get_current_data_file():
     return file_selector.value
 
 
-# Add local load_and_clean_data function
-def load_and_clean_data(filename: str, selected_tags=None) -> pd.DataFrame:
+# Add a reusable data cleaning/filtering function
+def clean_and_filter_data(df: pd.DataFrame, selected_tags=None) -> pd.DataFrame:
     """
-    Load and clean data from a CSV file.
-    - Reads the specified CSV file.
+    Clean and filter a DataFrame:
     - Filters out records with a cycle_time_days <= 0.
     - If selected_tags is provided, filters rows to include:
       * Rows that have ANY of the selected tags
       * Rows with no tags (empty or NaN in tags column)
     """
     try:
-        df = pd.read_csv(filename)
         cleaned = df[df["cycle_time_days"] > 0].copy()
         if selected_tags and len(selected_tags) > 0 and "tags" in cleaned.columns:
             include_mask = pd.Series([False] * len(cleaned), index=cleaned.index)
@@ -89,6 +87,18 @@ def load_and_clean_data(filename: str, selected_tags=None) -> pd.DataFrame:
                     include_mask[idx] = True
             cleaned = cleaned[include_mask].copy()
         return cleaned
+    except Exception as e:
+        return pd.DataFrame({"Error": [f"Could not clean/filter data: {str(e)}"]})
+
+
+# Update load_and_clean_data to use the new cleaning function
+def load_and_clean_data(filename: str, selected_tags=None) -> pd.DataFrame:
+    """
+    Load data from a CSV file and clean/filter it.
+    """
+    try:
+        df = pd.read_csv(filename)
+        return clean_and_filter_data(df, selected_tags)
     except Exception as e:
         return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
