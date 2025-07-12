@@ -17,60 +17,43 @@ def get_next_business_day() -> date:
 
 
 def load_and_clean_data(
-    filename: str, min_date: str = "2018-01-01", selected_tags: Optional[list] = None
+    filename: str, selected_tags: Optional[list] = None
 ) -> pd.DataFrame:
     """
     Load and clean data from a CSV file.
 
     - Reads the specified CSV file.
-    - Parses 'created_date' column.
-    - Filters out records with a created_date before min_date.
     - Filters out records with a cycle_time_days <= 0.
     - If selected_tags is provided, filters rows to include:
       * Rows that have ANY of the selected tags
       * Rows with no tags (empty or NaN in tags column)
     """
     try:
-        df = pd.read_csv(filename, parse_dates=["created_date"])
-        # Clean the data, excluding cycle times <= 0 and dates before min_date
-        cleaned = df[
-            (df["created_date"] > min_date) & (df["cycle_time_days"] > 0)
-        ].copy()
+        df = pd.read_csv(filename)
+        # Clean the data, excluding cycle times <= 0
+        cleaned = df[df["cycle_time_days"] > 0].copy()
 
         # Apply tag filtering if tags are selected
         if selected_tags and len(selected_tags) > 0 and "tags" in cleaned.columns:
-            # Create a mask for rows to include
             include_mask = pd.Series([False] * len(cleaned), index=cleaned.index)
-
             for idx, row in cleaned.iterrows():
                 tags_str = row.get("tags", "")
-
-                # Always include rows with no tags
                 if pd.isna(tags_str) or str(tags_str).strip() == "":
                     include_mask[idx] = True
                     continue
-
-                # Check if row has ANY of the selected tags
                 row_tags = [tag.strip() for tag in str(tags_str).split(",")]
                 if any(tag in selected_tags for tag in row_tags):
                     include_mask[idx] = True
-
-            # Apply the filter
             cleaned = cleaned[include_mask].copy()
-
         return cleaned
     except Exception as e:
-        # Return an empty DataFrame with an Error column if loading fails
         return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
 
 def forecast_days_for_work_items(
     num_work_items: int,
     filename: str = "data/data.csv",
-    project: Optional[int] = None,
     num_iterations: int = 5000,
-    min_date: str = "2018-01-01",
-    start_date: Optional[str] = None,
     selected_tags: Optional[list] = None,
 ) -> Dict[str, Any]:
     """
@@ -79,10 +62,7 @@ def forecast_days_for_work_items(
     Parameters:
         num_work_items (int): Number of work items to forecast completion for.
         filename (str): Path to the CSV file with work item data.
-        project (Optional[int]): Project group to filter on (column 'grp'). If None, use all projects.
         num_iterations (int): Number of Monte Carlo simulation runs.
-        min_date (str): Minimum created_date to include (YYYY-MM-DD).
-        start_date (str, optional): Start date for the forecast (YYYY-MM-DD). Defaults to today.
         selected_tags (Optional[list]): List of tags to filter by. If None, no tag filtering is applied.
 
     Returns:
@@ -91,52 +71,26 @@ def forecast_days_for_work_items(
             - 'percentiles': Dict[str, float], percentiles of simulated durations (keys: as in PERCENTILES)
             - 'percentile_dates': Dict[str, str], projected completion dates for each percentile (ISO format)
             - 'num_work_items': int, number of work items requested
-            - 'project': int or None, project group used
             - 'num_iterations': int, number of simulation runs
-            - 'min_date': str, minimum date used for filtering
-            - 'start_date': str, start date used for forecast
     """
-    # Load and clean data
-    cleaned = load_and_clean_data(filename, min_date, selected_tags)
-
+    cleaned = load_and_clean_data(filename, selected_tags)
     if "Error" in cleaned.columns:
-        # If there was an error loading the data, we cannot proceed.
-        # Consider how to propagate this error. For now, returning empty results.
         return {
             "simulated_durations": [],
             "percentiles": {},
             "percentile_dates": {},
             "num_work_items": num_work_items,
-            "project": project,
             "num_iterations": num_iterations,
-            "min_date": min_date,
-            "start_date": None,
         }
-
-    if project is not None:
-        cycle_times = cleaned[cleaned["grp"] == project]["cycle_time_days"].to_numpy()
-    else:
-        cycle_times = cleaned["cycle_time_days"].to_numpy()
-
-    # Handle start_date to return it even if simulation fails
-    if start_date is None:
-        start_ts = pd.Timestamp.today().normalize()
-    else:
-        start_ts = pd.Timestamp(start_date)
-
-    # If, after filtering, there is no data, we cannot run a simulation.
+    cycle_times = cleaned["cycle_time_days"].to_numpy()
+    start_ts = pd.Timestamp.today().normalize()
     if len(cycle_times) == 0:
         return {
             "simulated_durations": [],
             "percentiles": {},
             "percentile_dates": {},
             "num_work_items": num_work_items,
-            "project": project,
             "num_iterations": num_iterations,
-            "min_date": min_date,
-            "start_date": (
-                start_ts.date().isoformat() if start_ts is not pd.NaT else None
-            ),
         }
 
     def cumulative_sum(total_work_items, cycle_times, selector):
@@ -145,31 +99,23 @@ def forecast_days_for_work_items(
             total.append(selector(cycle_times) + total[-1])
         return total
 
-    # Monte Carlo simulation
     simulated_totals = []
     for _ in range(num_iterations):
         walk = cumulative_sum(num_work_items, cycle_times, random.choice)
         simulated_totals.append(walk[-1])
-
     percentiles = {
         str(p): float(np.quantile(simulated_totals, p / 100)) for p in PERCENTILES
     }
-
-    # Handle start_date
     percentile_dates = {
         k: (start_ts + pd.Timedelta(days=v)).date().isoformat()
         for k, v in percentiles.items()
     }
-
     return {
         "simulated_durations": simulated_totals,
         "percentiles": percentiles,
         "percentile_dates": percentile_dates,
         "num_work_items": num_work_items,
-        "project": project,
         "num_iterations": num_iterations,
-        "min_date": min_date,
-        "start_date": start_ts.date().isoformat() if start_ts is not pd.NaT else None,
     }
 
 
@@ -177,9 +123,7 @@ def forecast_work_items_in_period(
     start_date: str,
     end_date: str,
     filename: str = "data/data.csv",
-    project: Optional[int] = None,
     num_iterations: int = 5000,
-    min_date: str = "2018-01-01",
     selected_tags: Optional[list] = None,
 ) -> Dict[str, Any]:
     """
@@ -189,9 +133,7 @@ def forecast_work_items_in_period(
         start_date (str): Start date for the forecast period (YYYY-MM-DD).
         end_date (str): End date for the forecast period (YYYY-MM-DD).
         filename (str): Path to the CSV file with work item data.
-        project (Optional[int]): Project group to filter on (column 'grp'). If None, use all projects.
         num_iterations (int): Number of Monte Carlo simulation runs.
-        min_date (str): Minimum created_date to include (YYYY-MM-DD).
         selected_tags (Optional[list]): List of tags to filter by. If None, no tag filtering is applied.
 
     Returns:
@@ -200,36 +142,21 @@ def forecast_work_items_in_period(
             - 'percentiles': Dict[str, float], percentiles of simulated work items (keys: as in PERCENTILES)
             - 'start_date': str, start date used for forecast
             - 'end_date': str, end date used for forecast
-            - 'project': int or None, project group used
             - 'num_iterations': int, number of simulation runs
-            - 'min_date': str, minimum date used for filtering
     """
-    # Load and clean data
-    cleaned = load_and_clean_data(filename, min_date, selected_tags)
-
+    cleaned = load_and_clean_data(filename, selected_tags)
     if "Error" in cleaned.columns:
-        # Propagate error if data loading fails
         return {
             "simulated_work_items": [],
             "percentiles": {},
             "start_date": None,
             "end_date": None,
-            "project": project,
             "num_iterations": num_iterations,
-            "min_date": min_date,
         }
-
-    if project is not None:
-        cycle_times = cleaned[cleaned["grp"] == project]["cycle_time_days"].to_numpy()
-    else:
-        cycle_times = cleaned["cycle_time_days"].to_numpy()
-
-    # Handle dates to return them even if simulation fails
+    cycle_times = cleaned["cycle_time_days"].to_numpy()
     start_ts = pd.Timestamp(start_date)
     end_ts = pd.Timestamp(end_date)
     max_days = (end_ts - start_ts).days
-
-    # If, after filtering, there is no data, we cannot run a simulation.
     if len(cycle_times) == 0:
         return {
             "simulated_work_items": [],
@@ -238,9 +165,7 @@ def forecast_work_items_in_period(
                 start_ts.date().isoformat() if start_ts is not pd.NaT else None
             ),
             "end_date": end_ts.date().isoformat() if end_ts is not pd.NaT else None,
-            "project": project,
             "num_iterations": num_iterations,
-            "min_date": min_date,
         }
 
     def simulate_days(num_of_iterations, max_days, cycle_times):
@@ -260,13 +185,10 @@ def forecast_work_items_in_period(
     percentiles = {
         str(p): float(np.quantile(simulated_work_items, p / 100)) for p in PERCENTILES
     }
-
     return {
         "simulated_work_items": simulated_work_items,
         "percentiles": percentiles,
         "start_date": start_ts.date().isoformat() if start_ts is not pd.NaT else None,
         "end_date": end_ts.date().isoformat() if end_ts is not pd.NaT else None,
-        "project": project,
         "num_iterations": num_iterations,
-        "min_date": min_date,
     }

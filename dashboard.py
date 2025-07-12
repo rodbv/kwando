@@ -9,6 +9,8 @@ from monte_carlo import (
 from datetime import datetime, timedelta
 import argparse
 import os
+from panel.layout import Row
+from panel.widgets import Checkbox
 
 # Initialize Panel with template support
 pn.extension("tabulator", "ace")
@@ -40,7 +42,13 @@ csv_files = [f"data/{f}" for f in os.listdir("data") if f.endswith(".csv")]
 
 # File selector widget
 file_selector = pn.widgets.Select(
-    name="Choose CSV file", options=csv_files, value=csv_files[0] if csv_files else None
+    name="Choose CSV file",
+    options=csv_files,
+    value=(
+        "data/data_clean.csv"
+        if "data/data_clean.csv" in csv_files
+        else (csv_files[0] if csv_files else None)
+    ),
 )
 
 # Dynamic tag checkboxes (will be created based on loaded data)
@@ -64,31 +72,25 @@ def get_data_stats_md(df):
         if not file_selector.value:
             return "### Data Statistics\n\nNo file selected."
 
-        original_df = pd.read_csv(file_selector.value, parse_dates=["created_date"])
+        original_df = pd.read_csv(file_selector.value)
 
         # Count invalid rows (cycle_time_days <= 0)
         invalid_cycle_time = len(original_df[original_df["cycle_time_days"] <= 0])
 
-        # Count rows before min_date (2018-01-01)
-        min_date_filter = pd.Timestamp("2018-01-01")
-        invalid_date = len(original_df[original_df["created_date"] <= min_date_filter])
+        # Count rows before min_date (2018-01-01) - removed since we're not treating this as invalid data
 
         # Perform calculations on the filtered data
-        min_date = df["created_date"].min().strftime("%Y-%m-%d")
-        max_date = df["created_date"].max().strftime("%Y-%m-%d")
         min_cycle_time = df["cycle_time_days"].min()
         max_cycle_time = df["cycle_time_days"].max()
         median_cycle_time = df["cycle_time_days"].median()
         total_items = len(df)
-        num_groups = df["grp"].nunique()
         total_original = len(original_df)
+        invalid_date = 0  # Not counting this as invalid data anymore
 
         # Format as a Markdown string
         stats_md = f"""
 ### Data Statistics
 - **Total Work Items:** {total_items}
-- **Number of Groups:** {num_groups}
-- **Date Range:** {min_date} to {max_date}
 - **Min Cycle Time:** `{min_cycle_time}` days
 - **Max Cycle Time:** `{max_cycle_time}` days
 - **Median Cycle Time:** `{median_cycle_time:.1f}` days
@@ -96,7 +98,6 @@ def get_data_stats_md(df):
 ### Data Quality
 - **Original Rows:** {total_original}
 - **Invalid Cycle Times (≤0):** {invalid_cycle_time}
-- **Rows Before 2018-01-01:** {invalid_date}
 - **Valid Rows Used:** {total_items}
 """
         return stats_md
@@ -146,17 +147,16 @@ def handle_file_selection(event):
         )
         data_stats_pane.object = "### Data Statistics\n\nNo file selected."
         default_file_text.object = "**No data file selected.**"
-        # Hide tag checkboxes if no file selected
         tag_checkboxes.visible = False
         return
 
     # Collect selected tags from checkboxes
     selected_tags = []
-    if tag_checkboxes.visible and len(tag_checkboxes) > 1:  # Skip the header text
-        checkbox_row = tag_checkboxes[1]  # The row containing checkboxes
-        if hasattr(checkbox_row, "__iter__"):
+    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
+        checkbox_row = tag_checkboxes[1]
+        if isinstance(checkbox_row, Row):
             for checkbox in checkbox_row:
-                if hasattr(checkbox, "value") and checkbox.value:
+                if isinstance(checkbox, Checkbox) and checkbox.value:
                     selected_tags.append(checkbox.name)
 
     # Load data with tag filtering
@@ -171,9 +171,7 @@ def handle_file_selection(event):
     if "Error" not in full_df.columns and "tags" in full_df.columns:
         # Load the full unfiltered dataset to get all available tags
         try:
-            full_unfiltered_df = pd.read_csv(
-                file_selector.value, parse_dates=["created_date"]
-            )
+            full_unfiltered_df = pd.read_csv(file_selector.value)
             # Extract unique tags from the full unfiltered data
             all_tags = set()
             if "tags" in full_unfiltered_df.columns:
@@ -192,11 +190,11 @@ def handle_file_selection(event):
         if all_tags:
             # Get currently selected tags before clearing
             currently_selected = set()
-            if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+            if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
                 checkbox_row = tag_checkboxes[1]
-                if hasattr(checkbox_row, "__iter__"):
+                if isinstance(checkbox_row, Row):
                     for checkbox in checkbox_row:
-                        if hasattr(checkbox, "value") and checkbox.value:
+                        if isinstance(checkbox, Checkbox) and checkbox.value:
                             currently_selected.add(checkbox.name)
 
             # Clear existing checkboxes and create new ones
@@ -233,11 +231,11 @@ def get_data_source_info(selected_file, tags_visible):
 
     # Get selected tags
     selected_tags = []
-    if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
         checkbox_row = tag_checkboxes[1]
-        if hasattr(checkbox_row, "__iter__"):
+        if isinstance(checkbox_row, Row):
             for checkbox in checkbox_row:
-                if hasattr(checkbox, "value") and checkbox.value:
+                if isinstance(checkbox, Checkbox) and checkbox.value:
                     selected_tags.append(checkbox.name)
 
     # Create info text
@@ -258,11 +256,11 @@ def handle_tag_selection(event):
 
     # Collect selected tags
     selected_tags = []
-    if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
         checkbox_row = tag_checkboxes[1]
-        if hasattr(checkbox_row, "__iter__"):
+        if isinstance(checkbox_row, Row):
             for checkbox in checkbox_row:
-                if hasattr(checkbox, "value") and checkbox.value:
+                if isinstance(checkbox, Checkbox) and checkbox.value:
                     selected_tags.append(checkbox.name)
 
     # Load filtered data without recreating checkboxes
@@ -344,13 +342,6 @@ num_cards_slider = pn.widgets.IntSlider(
     width=400,
 )
 
-start_date_picker = pn.widgets.DatePicker(
-    name="Start Date",
-    value=get_next_business_day(),
-    start=datetime.now().date(),
-    width=200,
-)
-
 # Widgets for time period simulation
 period_start_date = pn.widgets.DatePicker(
     name="Period Start Date",
@@ -368,14 +359,14 @@ period_end_date = pn.widgets.DatePicker(
 
 
 # Function to update results based on work items simulation
-def update_work_items_results(num_cards, start_date):
+def update_work_items_results(num_cards):
     # Collect selected tags
     selected_tags = []
-    if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
         checkbox_row = tag_checkboxes[1]
-        if hasattr(checkbox_row, "__iter__"):
+        if isinstance(checkbox_row, Row):
             for checkbox in checkbox_row:
-                if hasattr(checkbox, "value") and checkbox.value:
+                if isinstance(checkbox, Checkbox) and checkbox.value:
                     selected_tags.append(checkbox.name)
 
     try:
@@ -383,7 +374,6 @@ def update_work_items_results(num_cards, start_date):
             num_work_items=num_cards,
             filename=current_data_file,
             num_iterations=5000,
-            start_date=start_date,
             selected_tags=selected_tags,
         )
 
@@ -419,11 +409,11 @@ def update_work_items_results(num_cards, start_date):
 def update_period_results(start_date, end_date):
     # Collect selected tags
     selected_tags = []
-    if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
         checkbox_row = tag_checkboxes[1]
-        if hasattr(checkbox_row, "__iter__"):
+        if isinstance(checkbox_row, Row):
             for checkbox in checkbox_row:
-                if hasattr(checkbox, "value") and checkbox.value:
+                if isinstance(checkbox, Checkbox) and checkbox.value:
                     selected_tags.append(checkbox.name)
 
     try:
@@ -467,13 +457,12 @@ def update_period_results(start_date, end_date):
 # Create the reactive functions that update based on widget changes
 @pn.depends(
     num_cards_slider.param.value,
-    start_date_picker.param.value,
     file_selector.param.value,
 )
-def get_work_items_results(num_cards, start_date, selected_file):
+def get_work_items_results(num_cards, selected_file):
     global current_data_file
     current_data_file = selected_file
-    return update_work_items_results(num_cards, start_date)
+    return update_work_items_results(num_cards)
 
 
 @pn.depends(
@@ -565,7 +554,6 @@ def get_main_content(show_help, sim_type):
                         "### Parameters",
                         data_source_info,  # Show current file and tags info (reactive)
                         num_cards_slider,
-                        start_date_picker,
                         sizing_mode="stretch_width",
                     ),
                 ),
@@ -611,7 +599,6 @@ def get_main_content(show_help, sim_type):
                 pn.layout.Spacer(height=30),
                 pn.pane.Markdown("**CSV file must have the following columns:**"),
                 pn.pane.Markdown("- `id`: Unique identifier for each work item"),
-                pn.pane.Markdown("- `grp`: Group/project identifier"),
                 pn.pane.Markdown(
                     "- `cycle_time_days`: Time taken to complete the work item"
                 ),
