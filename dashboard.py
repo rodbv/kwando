@@ -22,14 +22,57 @@ def get_next_business_day():
 
 
 # Create widgets for both simulation types
-simulation_type = pn.widgets.RadioButtonGroup(
-    name="Simulation Type",
-    options=["When will it be done?", "How many items?"],
-    button_type="primary",
-    value="When will it be done?",
-    orientation="vertical",  # Make buttons stack vertically
-    margin=(0, 0, 15, 0),  # Add margin below each button
+when_button = pn.widgets.Button(
+    name="When will it be done?", button_type="primary", width=200
 )
+
+how_many_button = pn.widgets.Button(
+    name="How many items?", button_type="primary", width=200
+)
+
+# Create a parameter to track which simulation is active
+active_simulation = pn.widgets.Select(
+    name="Active Simulation",
+    options=["When will it be done?", "How many items?"],
+    value="When will it be done?",
+    visible=False,  # Hide this control, we'll use it just for state
+)
+
+# Create a help button that shows/hides the explanation
+help_visible = pn.widgets.Toggle(
+    name="📚 Learn about Monte Carlo Simulation",
+    value=False,
+    button_type="primary",
+    width=300,
+)
+
+
+# Update active simulation when buttons are clicked
+def set_when_active(event):
+    help_visible.value = False  # Reset help toggle
+    active_simulation.value = "When will it be done?"
+
+
+def set_how_many_active(event):
+    help_visible.value = False  # Reset help toggle
+    active_simulation.value = "How many items?"
+
+
+when_button.on_click(set_when_active)
+how_many_button.on_click(set_how_many_active)
+
+
+# Update button appearance based on active simulation
+@pn.depends(active_simulation.param.value, help_visible.param.value)
+def update_button_styles(active, show_help):
+    when_button.button_type = (
+        "primary" if active == "When will it be done?" and not show_help else "default"
+    )
+    how_many_button.button_type = (
+        "primary" if active == "How many items?" and not show_help else "default"
+    )
+    return ""
+
 
 # Widgets for work items simulation
 num_cards_slider = pn.widgets.IntSlider(
@@ -149,28 +192,109 @@ work_items_results = pn.bind(pn.pane.Markdown, get_work_items_results)
 period_results = pn.bind(pn.pane.Markdown, get_period_results)
 
 
-# Function to show/hide widgets based on simulation type
-@pn.depends(simulation_type.param.value)
-def get_simulation_widgets(sim_type):
-    if sim_type == "When will it be done?":
-        return pn.Column(
-            "## Work Items Simulation",
-            "Adjust the parameters below to forecast completion dates:",
-            num_cards_slider,
-            start_date_picker,
-            work_items_results,
-        )
+# Create help text with Monte Carlo explanation
+help_text = pn.pane.Markdown(
+    """
+## How These Forecasts Work
+
+### What is Monte Carlo Simulation?
+Monte Carlo simulation is a mathematical technique that helps us make predictions in uncertain environments. In software delivery, we use it to forecast delivery dates or team capacity by:
+1. Looking at our historical completion data (how long items actually took)
+2. Running thousands of "simulations" using random samples from this history
+3. Analyzing the results to provide confidence levels
+
+### What Data Are We Using?
+- We analyze your team's actual cycle times (how long items took from start to finish)
+- Each work item's cycle time captures the full "system time" including delays, dependencies, and rework
+- We use this real data rather than estimates because it includes all the natural variation in your delivery system
+
+### How to Read the Results
+- The forecasts show different confidence levels (70% to 98%)
+- An "80% confidence" means that, based on your historical performance, you have an 80% chance of hitting that target
+- Higher confidence levels (90%, 95%) give you more certainty but predict longer durations
+- Lower confidence levels (70%, 80%) are more aggressive but carry more risk
+
+### Key Concepts
+1. **Using History vs Estimates**: Rather than relying on up-front estimates, we use your actual delivery history. This captures your team's real-world performance including all the normal delays and uncertainties.
+
+2. **Probabilistic vs Deterministic**: Instead of a single date, we provide a range of possibilities with confidence levels. This better reflects the inherent uncertainty in knowledge work.
+
+3. **System Thinking**: The cycle times reflect your entire delivery system - not just coding time but also reviews, testing, deployments, and any delays. This gives you a more realistic picture of delivery times.
+
+### When to Use Each Simulation
+- **"When will it be done?"** - Use when you have a specific number of work items and need to forecast completion dates
+- **"How many items?"** - Use when you have a time period and need to forecast how many items you can complete
+
+### Making Better Decisions
+- Use higher confidence levels (90%+) for important commitments or dependencies
+- Use lower confidence levels (70-80%) for internal planning or less critical items
+- Look for ways to reduce your cycle times to improve all forecasts
+- Remember: the goal is to make informed decisions, not to get exact predictions
+
+### Learn More
+
+**Books by Daniel Vacanti:**
+- [Actionable Agile Metrics for Predictability](https://actionableagile.com/books/aamfp){target="_blank"} - The definitive guide to flow metrics and analytics
+- [When Will It Be Done?](https://leanpub.com/whenwillitbedone){target="_blank"} - Lean-Agile Forecasting to Answer Your Customers' Most Important Question
+- [Actionable Agile Metrics Volume II](https://actionableagile.com/books/aamfp-vol2){target="_blank"} - Advanced Topics in Predictability
+
+**Additional Resources:**
+- [ProKanban.org](https://prokanban.org/){target="_blank"} - Community for learning about Kanban and flow metrics
+- [Why Monte Carlo Simulation?](https://www.youtube.com/watch?v=j1FTNVRkJYg){target="_blank"} - Video explanation by Daniel Vacanti
+
+*Based on concepts from ActionableAgile™ and "Actionable Agile Metrics for Predictability" by Daniel Vacanti.*
+"""
+)
+
+
+# Create a dynamic panel with smooth transitions
+@pn.depends(help_visible.param.value, active_simulation.param.value)
+def get_main_content(show_help, sim_type):
+    # Create the content based on current state
+    if show_help:
+        content = help_text
+        title = "About Monte Carlo Simulation"
     else:
-        return pn.Column(
-            "## Time Period Simulation",
-            "Adjust the date range to forecast work items completion:",
-            period_start_date,
-            period_end_date,
-            period_results,
-        )
+        if sim_type == "When will it be done?":
+            content = pn.Column(
+                "Adjust the parameters below to forecast completion dates:",
+                num_cards_slider,
+                start_date_picker,
+                work_items_results,
+            )
+            title = "Work Items Simulation"
+        else:
+            content = pn.Column(
+                "Adjust the date range to forecast work items completion:",
+                period_start_date,
+                period_end_date,
+                period_results,
+            )
+            title = "Time Period Simulation"
+
+    # Wrap content in a card with smooth transition
+    return pn.Card(
+        content,
+        title=title,
+        collapsed=False,
+        sizing_mode="stretch_width",
+        styles={
+            "border": "0px",  # Remove card border
+            "box-shadow": "none",  # Remove shadow
+            "transition": "opacity 0.3s ease-in-out",  # Smooth fade transition
+            "background": "transparent",  # Transparent background
+        },
+    )
 
 
-# Sidebar content
+# Create button column with spacing
+button_column = pn.Column(
+    when_button,
+    pn.layout.Spacer(height=20),  # Add 20px space between buttons
+    how_many_button,
+)
+
+# About section for sidebar
 about_text = pn.pane.Markdown(
     """
 ### About
@@ -183,27 +307,33 @@ This dashboard uses Monte Carlo simulation to forecast either:
 The forecasts are based on historical completion data.
 """,
     styles={"font-size": "14px"},
-)  # Note: styles not style
+)
 
+# Sidebar with simulation type selection, basic about, and help button
 sidebar = pn.Column(
     pn.pane.Markdown("## Simulation Type", styles={"margin-bottom": "10px"}),
     pn.pane.Markdown(
         "Choose the type of simulation to run:", styles={"margin-bottom": "15px"}
     ),
-    simulation_type,
-    pn.layout.Spacer(height=30),  # More space after buttons
+    button_column,
+    active_simulation,  # This will be hidden but needed for state
+    update_button_styles,  # This will update button styles
+    pn.layout.Spacer(height=30),
     about_text,
-    margin=(0, 0, 10, 0),  # Add margin between elements
+    pn.layout.Spacer(height=10),
+    help_visible,
+    margin=(0, 0, 10, 0),
 )
 
-# Main content
-main = [
-    pn.pane.Markdown("## Work Item Completion Forecast"),
-    pn.pane.Markdown(
-        "This simulation helps answer either 'When will it be done?' or 'How much can we do?' by analyzing historical completion data and running Monte Carlo simulations."
-    ),
-    get_simulation_widgets,
-]
+# Main content with smooth transitions
+main = pn.Column(
+    get_main_content,
+    sizing_mode="stretch_both",  # Make it fill available space
+    styles={
+        "padding": "20px",  # Add some padding
+        "background": "transparent",  # Transparent background
+    },
+)
 
 # Create the template with dark mode support
 template = pn.template.FastListTemplate(
