@@ -192,10 +192,38 @@ def handle_file_selection(event):
 file_selector.param.watch(handle_file_selection, "value")
 
 
+@pn.depends(file_selector.param.value, tag_checkboxes.param.visible)
+def get_data_source_info(selected_file, tags_visible):
+    """Get information about current data source and selected tags"""
+    if not selected_file:
+        return pn.pane.Markdown("**Data Source:** No file selected")
+
+    # Get selected tags
+    selected_tags = []
+    if tag_checkboxes.visible and len(tag_checkboxes) > 1:
+        checkbox_row = tag_checkboxes[1]
+        if hasattr(checkbox_row, "__iter__"):
+            for checkbox in checkbox_row:
+                if hasattr(checkbox, "value") and checkbox.value:
+                    selected_tags.append(checkbox.name)
+
+    # Create info text
+    info_text = f"**Data Source:** {selected_file}"
+    if selected_tags:
+        tags_text = ", ".join(selected_tags)
+        info_text += f" | **Tags:** {tags_text}"
+    else:
+        info_text += " | **Tags:** All tags (none selected)"
+
+    return pn.pane.Markdown(info_text)
+
+
 def handle_tag_selection(event):
     """Handle changes to tag checkboxes and update data preview"""
     if file_selector.value:
         handle_file_selection(None)  # Re-run file selection with current tag state
+        # Force update of data source info by triggering a parameter change
+        # This will make the reactive data source info update
 
 
 # Function to make checkboxes reactive (will be called when creating checkboxes)
@@ -207,8 +235,8 @@ def make_checkbox_reactive(checkbox):
 # Create a parameter to track which simulation is active
 active_simulation = pn.widgets.Select(
     name="Active Simulation",
-    options=["When will it be done?", "How many items?", "Data Source"],
-    value="When will it be done?",
+    options=["Data Source", "When will it be done?", "How many items?"],
+    value="Data Source",
     visible=False,  # Hide this control, we'll use it just for state
 )
 
@@ -245,14 +273,14 @@ data_source_button.on_click(set_data_source_active)
 # Update button appearance based on active simulation
 @pn.depends(active_simulation.param.value, help_visible.param.value)
 def update_button_styles(active, show_help):
+    data_source_button.button_type = (
+        "primary" if active == "Data Source" and not show_help else "default"
+    )
     when_button.button_type = (
         "primary" if active == "When will it be done?" and not show_help else "default"
     )
     how_many_button.button_type = (
         "primary" if active == "How many items?" and not show_help else "default"
-    )
-    data_source_button.button_type = (
-        "primary" if active == "Data Source" and not show_help else "default"
     )
     return ""
 
@@ -414,6 +442,9 @@ def get_period_results(start_date, end_date, selected_file):
 work_items_results = pn.bind(pn.pane.Markdown, get_work_items_results)
 period_results = pn.bind(pn.pane.Markdown, get_period_results)
 
+# Create reactive data source info
+data_source_info = get_data_source_info
+
 
 # Create help text with Monte Carlo explanation
 help_text = pn.pane.Markdown(
@@ -483,8 +514,7 @@ def get_main_content(show_help, sim_type):
                 pn.Row(
                     pn.Column(
                         "### Parameters",
-                        file_selector,
-                        tag_checkboxes,  # Add tag filtering to simulation pages
+                        data_source_info,  # Show current file and tags info (reactive)
                         num_cards_slider,
                         start_date_picker,
                         sizing_mode="stretch_width",
@@ -498,8 +528,7 @@ def get_main_content(show_help, sim_type):
                 pn.Row(
                     pn.Column(
                         "### Parameters",
-                        file_selector,
-                        tag_checkboxes,  # Add tag filtering to simulation pages
+                        data_source_info,  # Show current file and tags info (reactive)
                         period_start_date,
                         period_end_date,
                         sizing_mode="stretch_width",
@@ -553,11 +582,11 @@ def get_main_content(show_help, sim_type):
 
 # Create button column with spacing
 button_column = pn.Column(
-    when_button,
-    pn.layout.Spacer(height=20),  # Add 20px space between buttons
-    how_many_button,
-    pn.layout.Spacer(height=20),  # Add space between buttons and data source button
     data_source_button,
+    pn.layout.Spacer(height=20),  # Add 20px space between buttons
+    when_button,
+    pn.layout.Spacer(height=20),  # Add space between buttons
+    how_many_button,
 )
 
 # About section for sidebar
