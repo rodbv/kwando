@@ -1,6 +1,10 @@
 import panel as pn
 import pandas as pd
-from monte_carlo import forecast_days_for_work_items, forecast_work_items_in_period
+from monte_carlo import (
+    forecast_days_for_work_items,
+    forecast_work_items_in_period,
+    get_next_business_day,
+)
 from datetime import datetime, timedelta
 import argparse
 
@@ -10,16 +14,6 @@ pn.extension("tabulator", "ace")
 # Set theme colors
 ACCENT_COLOR = "#2c5282"  # A more elegant navy blue
 ACCENT_COLOR_DARK = "#90cdf4"  # Lighter blue for dark mode
-
-
-def get_next_business_day():
-    """Calculate the next business day from today"""
-    next_day = datetime.now() + timedelta(days=1)
-    # Keep adding days until we get a weekday (Monday = 0, Sunday = 6)
-    while next_day.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
-        next_day += timedelta(days=1)
-    return next_day.date()
-
 
 # Create widgets for both simulation types
 when_button = pn.widgets.Button(

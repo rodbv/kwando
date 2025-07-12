@@ -2,8 +2,18 @@ import pandas as pd
 import numpy as np
 import random
 from typing import List, Dict, Any, Optional
+from datetime import datetime, timedelta
 
 PERCENTILES = [70, 80, 90, 95, 98]
+
+
+def get_next_business_day() -> datetime.date:
+    """Calculate the next business day from today"""
+    next_day = datetime.now() + timedelta(days=1)
+    # Keep adding days until we get a weekday (Monday = 0, Sunday = 6)
+    while next_day.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
+        next_day += timedelta(days=1)
+    return next_day.date()
 
 
 def forecast_days_for_work_items(
