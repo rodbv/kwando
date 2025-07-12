@@ -149,12 +149,25 @@ def handle_file_selection(event):
 
     # Handle dynamic tag checkboxes
     if "Error" not in full_df.columns and "tags" in full_df.columns:
-        # Extract unique tags from the data
-        all_tags = set()
-        for tags_str in full_df["tags"].dropna():
-            if tags_str.strip():  # Skip empty strings
-                tags = [tag.strip() for tag in tags_str.split(",")]
-                all_tags.update(tags)
+        # Load the full unfiltered dataset to get all available tags
+        try:
+            full_unfiltered_df = pd.read_csv(
+                file_selector.value, parse_dates=["created_date"]
+            )
+            # Extract unique tags from the full unfiltered data
+            all_tags = set()
+            if "tags" in full_unfiltered_df.columns:
+                for tags_str in full_unfiltered_df["tags"].dropna():
+                    if tags_str.strip():  # Skip empty strings
+                        tags = [tag.strip() for tag in tags_str.split(",")]
+                        all_tags.update(tags)
+        except:
+            # Fallback to using the filtered data if loading full data fails
+            all_tags = set()
+            for tags_str in full_df["tags"].dropna():
+                if tags_str.strip():  # Skip empty strings
+                    tags = [tag.strip() for tag in tags_str.split(",")]
+                    all_tags.update(tags)
 
         if all_tags:
             # Get currently selected tags before clearing
