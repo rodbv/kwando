@@ -1,48 +1,62 @@
+[Versão em português](README.md)
+
+[![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
+![Coverage](https://img.shields.io/badge/coverage-97%25-green)
+
 # KWANDO: Monte Carlo Simulation Dashboard
 
-KWANDO is a simple, open-source dashboard for Monte Carlo simulations using your own CSV data. It helps you forecast delivery dates and team capacity using real historical data. Built with Python and [Panel](https://panel.holoviz.org/).
+A dashboard to forecast work item completion using Monte Carlo simulations. Built with Python and [Panel](https://panel.holoviz.org/).
 
-## Features
+<img src="docs/images/screencap.gif" alt="KWANDO Dashboard Screenshot" style="max-width: 600px; box-shadow: 0 4px 24px #0003; border-radius: 8px; margin: 1em 0;" />
 
-- **Forecast Completion Dates**: Predict when a set number of work items will be done
-- **Capacity Planning**: Calculate how many items can be completed in a period
-- **Data Upload**: Use your own CSV files or sample data
-- **Web Interface**: Dashboard with real-time calculations
-- **Percentiles**: View percentiles (70%, 80%, 90%, 95%, 98%) for confidence levels
-- **No Vendor Lock-in**: 100% open source, runs locally or online
+## Getting Started
 
-## Quick Start
+### Prerequisites
 
-To run locally:
+- Python 3.12 or higher
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
 
-1. Install Python 3.12+
-2. Install the [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
-3. Clone the repository:
+### Installation
+
+1. Install uv:
+   ```sh
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+2. Clone the repository:
    ```sh
    git clone https://github.com/rodbv/kwando.git
    cd kwando
    ```
-4. Install dependencies:
+3. Install dependencies:
    ```sh
    uv sync
    ```
-5. Start the dashboard:
+4. Run the dashboard:
    ```sh
-   just run
-   # or
-   uv run panel serve src/dashboard.py --show
+   uv run panel serve src/dashboard.py
    ```
+5. Open your browser at the URL shown in the terminal (typically `http://localhost:5006`)
 
-## Usage
+## Data Format
 
-- Select or add your CSV file in the `data/` directory.
-- The CSV must have at least these columns:
-  - `id`: Unique identifier for each work item
-  - `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD (YYYY-MM-DD)
-  - `end_date`: End date of the work item in ISO 8601 format (YYYY-MM-DD)
-- Use the dashboard to:
-  - Forecast when a set number of items will be done
-  - Forecast how many items can be completed in a period
+Your CSV file must have at least one column `cycle_time_days` with positive numeric values representing the time to complete each work item.
+
+**Required columns:**
+- `cycle_time_days`: Number of days to complete each work item
+
+**Optional columns:**
+- `tags`: Comma-separated tags for filtering (e.g., "bug,frontend,high-priority")
+
+## How to Use
+
+1. **Load Data**: Use the "Data Source" section to upload your CSV file or choose an existing file
+2. **Choose Analysis**:
+   - **"When will it be done?"**: Calculate completion date for a specific number of items
+   - **"How many items?"**: Calculate how many items can be completed in a period
+3. **Adjust Parameters**: Set the number of items or date range
+4. **View Results**: See percentiles and confidence levels for your forecast
+
+---
 
 ## Contributing
 
@@ -60,9 +74,3 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - Monte Carlo simulation adapted from [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
 - Theory based on [ActionableAgile](https://www.actionableagile.com/) by Daniel Vacanti
-
----
-
-**Português**: [README.md](README.md)
-
-[Versão em português](README.md)
