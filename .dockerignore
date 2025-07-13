@@ -1,7 +1,29 @@
+# Ignore Python cache and test files
 __pycache__/
 *.pyc
 *.pyo
-*.egg-info/
-.env
-.venv
+*.pyd
+
+# Ignore git and VCS
 .git
+.gitignore
+
+# Ignore test files
+/tests/
+
+# Ignore specific docs (but keep about.md and monte_carlo_help.md)
+/docs/images/
+/docs/*.png
+/docs/*.gif
+
+# Ignore local config and env
+.env
+*.env
+*.local
+
+# Ignore editor and OS files
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/

@@ -364,7 +364,13 @@ def get_data_source_info():
 def load_help_text():
     """Load help text from markdown file."""
     try:
-        help_file_path = "docs/monte_carlo_help.md"
+        import os
+
+        # Get the directory where this script is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to the project root, then into docs
+        project_root = os.path.dirname(script_dir)
+        help_file_path = os.path.join(project_root, "docs", "monte_carlo_help.md")
         with open(help_file_path, encoding="utf-8") as f:
             help_content = f.read()
         return pn.pane.Markdown(help_content)
@@ -386,7 +392,13 @@ help_text = load_help_text()
 def load_about_text():
     """Load about text from markdown file."""
     try:
-        about_file_path = "docs/about.md"
+        import os
+
+        # Get the directory where this script is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to the project root, then into docs
+        project_root = os.path.dirname(script_dir)
+        about_file_path = os.path.join(project_root, "docs", "about.md")
         with open(about_file_path, encoding="utf-8") as f:
             about_content = f.read()
         return pn.pane.Markdown(about_content, styles={"font-size": "14px"})

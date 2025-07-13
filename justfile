@@ -12,9 +12,10 @@ install:
 install-dev:
     uv sync --extra dev
 
-# Run the dashboard
+# Run the dashboard (dockerized)
 run:
-    uv run panel serve src/dashboard.py --autoreload
+    docker build -t kwando-dashboard .
+    docker run --rm -p 5006:5006 --name kwando-dashboard kwando-dashboard
 
 # Run tests (single run, for CI or one-off)
 test:
