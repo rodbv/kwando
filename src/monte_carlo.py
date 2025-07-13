@@ -31,6 +31,9 @@ def load_and_prepare_data(csv_path: str) -> pd.DataFrame:
         return convert_dates_to_cycle_time(df)
     except pd.errors.ParserError as e:
         raise pd.errors.ParserError(f"Could not load data: {str(e)}") from e
+    except ValueError:
+        # Re-raise ValueError without wrapping it
+        raise
     except Exception as e:
         raise Exception(f"Could not load data: {str(e)}") from e
 

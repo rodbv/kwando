@@ -6,7 +6,9 @@ from monte_carlo import (
     convert_dates_to_cycle_time,
     forecast_days_for_work_items,
     forecast_work_items_in_period,
+    get_data_statistics,
     get_next_business_day,
+    load_and_prepare_data,
 )
 
 
@@ -241,3 +243,147 @@ def test_forecast_work_items_in_period_when_cycle_times_are_mixed_should_handle_
     )
     assert len(result["simulated_work_items"]) == 100
     assert any(item > 0 for item in result["simulated_work_items"])
+
+
+# Tests for load_and_prepare_data function
+def test_load_and_prepare_data_when_csv_has_valid_dates_should_return_dataframe_with_cycle_times(
+    tmp_path,
+):
+    """Test that load_and_prepare_data loads valid CSV and converts dates to cycle times."""
+    # Create a temporary CSV file
+    csv_content = """id,start_date,end_date
+1,2024-01-01,2024-01-01
+2,2024-01-01,2024-01-03
+3,2024-01-01,2024-01-05"""
+
+    csv_file = tmp_path / "test_data.csv"
+    csv_file.write_text(csv_content)
+
+    result = load_and_prepare_data(str(csv_file))
+
+    assert isinstance(result, pd.DataFrame)
+    assert "cycle_time_days" in result.columns
+    assert result.loc[0, "cycle_time_days"] == 1
+    assert result.loc[1, "cycle_time_days"] == 3
+    assert result.loc[2, "cycle_time_days"] == 5
+
+
+def test_load_and_prepare_data_when_csv_missing_required_columns_should_raise_value_error(
+    tmp_path,
+):
+    """Test that load_and_prepare_data raises ValueError when required columns are missing."""
+    # Create a temporary CSV file without required columns
+    csv_content = """id,some_other_column
+1,value1
+2,value2"""
+
+    csv_file = tmp_path / "test_data.csv"
+    csv_file.write_text(csv_content)
+
+    with pytest.raises(
+        ValueError, match="CSV must have start_date and end_date columns"
+    ):
+        load_and_prepare_data(str(csv_file))
+
+
+def test_load_and_prepare_data_when_csv_is_malformed_should_raise_parser_error(
+    tmp_path,
+):
+    """Test that load_and_prepare_data raises ParserError for malformed CSV."""
+    # Create a malformed CSV file with unclosed quotes
+    csv_content = """id,start_date,end_date
+1,2024-01-01,"2024-01-01
+2,2024-01-01,2024-01-02"""
+
+    csv_file = tmp_path / "test_data.csv"
+    csv_file.write_text(csv_content)
+
+    with pytest.raises(pd.errors.ParserError):
+        load_and_prepare_data(str(csv_file))
+
+
+def test_load_and_prepare_data_when_file_does_not_exist_should_raise_exception(
+    tmp_path,
+):
+    """Test that load_and_prepare_data raises exception when file doesn't exist."""
+    non_existent_file = tmp_path / "non_existent.csv"
+
+    with pytest.raises(Exception, match="Could not load data"):
+        load_and_prepare_data(str(non_existent_file))
+
+
+# Tests for get_data_statistics function
+def test_get_data_statistics_when_dataframe_is_valid_should_return_correct_statistics():
+    """Test that get_data_statistics returns correct statistics for valid DataFrame."""
+    df = pd.DataFrame({"id": [1, 2, 3, 4, 5], "cycle_time_days": [2, 4, 6, 8, 10]})
+
+    result = get_data_statistics(df)
+
+    assert result["total_items"] == 5
+    assert result["min_cycle_time"] == 2
+    assert result["max_cycle_time"] == 10
+    assert result["median_cycle_time"] == 6.0
+    assert result["error"] is None
+
+
+def test_get_data_statistics_when_dataframe_is_empty_should_return_error():
+    """Test that get_data_statistics returns error for empty DataFrame."""
+    df = pd.DataFrame()
+
+    result = get_data_statistics(df)
+
+    assert result["total_items"] == 0
+    assert result["min_cycle_time"] == 0
+    assert result["max_cycle_time"] == 0
+    assert result["median_cycle_time"] == 0
+    assert result["error"] == "No valid data available"
+
+
+def test_get_data_statistics_when_dataframe_is_none_should_return_error():
+    """Test that get_data_statistics returns error for None DataFrame."""
+    result = get_data_statistics(None)
+
+    assert result["total_items"] == 0
+    assert result["min_cycle_time"] == 0
+    assert result["max_cycle_time"] == 0
+    assert result["median_cycle_time"] == 0
+    assert result["error"] == "No valid data available"
+
+
+def test_get_data_statistics_when_cycle_time_column_missing_should_return_error():
+    """Test that get_data_statistics returns error when cycle_time_days column is missing."""
+    df = pd.DataFrame({"id": [1, 2, 3], "some_other_column": [2, 4, 6]})
+
+    result = get_data_statistics(df)
+
+    assert result["total_items"] == 0
+    assert result["min_cycle_time"] == 0
+    assert result["max_cycle_time"] == 0
+    assert result["median_cycle_time"] == 0
+    assert result["error"] == "No valid data available"
+
+
+def test_get_data_statistics_when_dataframe_has_single_row_should_return_correct_statistics():
+    """Test that get_data_statistics handles single row correctly."""
+    df = pd.DataFrame({"id": [1], "cycle_time_days": [5]})
+
+    result = get_data_statistics(df)
+
+    assert result["total_items"] == 1
+    assert result["min_cycle_time"] == 5
+    assert result["max_cycle_time"] == 5
+    assert result["median_cycle_time"] == 5.0
+    assert result["error"] is None
+
+
+def test_get_data_statistics_when_dataframe_has_mixed_cycle_times_should_calculate_median_correctly():
+    """Test that get_data_statistics calculates median correctly for mixed cycle times."""
+    df = pd.DataFrame({"id": [1, 2, 3, 4, 5], "cycle_time_days": [1, 3, 5, 7, 9]})
+
+    result = get_data_statistics(df)
+
+    assert result["total_items"] == 5
+    assert result["min_cycle_time"] == 1
+    assert result["max_cycle_time"] == 9
+    assert result["median_cycle_time"] == 5.0
+    assert result["error"] is None
