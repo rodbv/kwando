@@ -19,6 +19,8 @@ run:
 # Run the dashboard (production dockerized)
 run-docker:
     docker build -t kwando-dashboard .
+    docker stop kwando-dashboard 2>/dev/null || true
+    docker rm kwando-dashboard 2>/dev/null || true
     docker run --rm -p 5006:5006 --name kwando-dashboard kwando-dashboard
 
 # Run the dashboard (development dockerized)
