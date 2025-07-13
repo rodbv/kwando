@@ -1,3 +1,19 @@
 #!/bin/bash
-# Simple Panel server start for Binder
-panel serve binder/test_panel.py --port 8888 --address 0.0.0.0 &
+# Debug and start Panel server for Binder
+
+echo "=== Binder postBuild script starting ==="
+echo "Current directory: $(pwd)"
+echo "Python version: $(python --version)"
+echo "Panel version: $(python -c 'import panel; print(panel.__version__)' 2>/dev/null || echo 'Panel not installed')"
+
+# Try to start Panel server
+echo "Starting Panel server..."
+panel serve app.py --port 8888 --address 0.0.0.0 &
+
+# Wait a moment and check if it's running
+sleep 5
+echo "Checking if Panel server is running..."
+ps aux | grep panel || echo "Panel process not found"
+netstat -tlnp | grep 8888 || echo "Port 8888 not listening"
+
+echo "=== postBuild script finished ==="
