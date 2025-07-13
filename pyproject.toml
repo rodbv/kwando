@@ -1,8 +1,8 @@
 [project]
 name = "kwando"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "A Monte Carlo simulation dashboard for forecasting work item completion using historical cycle time data"
+readme = "README-en.md"
 requires-python = ">=3.12"
 dependencies = [
     "bokeh>=3.7.3",
