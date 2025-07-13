@@ -1,3 +1,0 @@
-#!/bin/bash
-echo "Starting Panel server from start script..."
-panel serve app.py --port 8888 --address 0.0.0.0 --show

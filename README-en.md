@@ -1,7 +1,3 @@
-<a href="https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard" target="_blank">
-  <img src="https://mybinder.org/badge_logo.svg" alt="Binder"/>
-</a>
-
 # KWANDO: Monte Carlo Simulation Dashboard
 
 KWANDO is a simple, open-source dashboard for Monte Carlo simulations using your own CSV data. It helps you forecast delivery dates and team capacity using real historical data.
@@ -17,15 +13,7 @@ KWANDO is a simple, open-source dashboard for Monte Carlo simulations using your
 
 ## Quick Start
 
-You can run the dashboard directly in your browser without installing anything:
-
-<a href="https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard" target="_blank">
-  <img src="https://mybinder.org/badge_logo.svg" alt="Binder"/>
-</a>
-
-*Use sample data or upload your own CSV file*
-
-Or run locally:
+To run locally:
 
 1. Install Python 3.9+
 2. Clone the repository:

@@ -1,29 +1,8 @@
 [![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
-<a href="https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard" target="_blank">
-  <img src="https://mybinder.org/badge_logo.svg" alt="Binder"/>
-</a>
 
 # KWANDO: Dashboard de Simulação Monte Carlo
 
 Dashboard para prever a conclusão de itens de trabalho usando simulações Monte Carlo. Feito com Python e [Panel](https://panel.holoviz.org/).
-
-## 🚀 Executar Online
-
-Você pode executar o dashboard diretamente no navegador sem instalar nada:
-
-<a href="https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard" target="_blank">**🌐 Executar KWANDO Online**</a>
-
-## Funcionalidades
-
-- **Prever Datas de Conclusão**: Calcular quando um número específico de itens será concluído
-- **Planejamento de Capacidade**: Calcular quantos itens podem ser concluídos em um período
-- **Upload de Dados**: Usar seus próprios arquivos CSV ou dados de exemplo
-- **Interface Web**: Dashboard com cálculos em tempo real
-- **Percentis**: Visualizar percentis (70%, 80%, 90%, 95%, 98%) para níveis de confiança
-
-## O que é Simulação Monte Carlo?
-
-A simulação Monte Carlo usa dados históricos de tempo de ciclo para executar milhares de simulações. Em vez de uma estimativa única, você obtém previsões com diferentes níveis de confiança, considerando a variabilidade natural dos tempos de conclusão.
 
 ## Começando
 
