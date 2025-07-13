@@ -47,13 +47,19 @@ Assista: [Seu projeto se comporta como um furacão. Faça previsões como um. (Y
 
 ## Formato dos Dados
 
-Seu arquivo CSV deve conter pelo menos uma coluna `cycle_time_days` com valores numéricos positivos representando o tempo necessário para concluir itens de trabalho.
+Seu arquivo CSV deve conter as seguintes colunas:
+- `id`: Identificador único para cada item de trabalho
+- `start_date`: Data de início no formato ISO 8601 (YYYY-MM-DD)
+- `end_date`: Data de conclusão no formato ISO 8601 (YYYY-MM-DD)
 
-**Colunas obrigatórias:**
-- `cycle_time_days`: Número de dias para concluir cada item de trabalho
+Exemplo:
 
-**Colunas opcionais:**
-- `tags`: Tags separadas por vírgula para filtragem (ex: "bug,frontend,alta-prioridade")
+```csv
+id,start_date,end_date
+1,2024-01-01,2024-01-01
+2,2024-01-01,2024-01-02
+3,2024-01-01,2024-01-03
+```
 
 ## Como Usar
 

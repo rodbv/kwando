@@ -45,35 +45,33 @@ def dates_df():
     )
 
 
-def test_convert_dates_to_cycle_time_same_date_should_be_one_day(dates_df):
+def test_convert_dates_to_cycle_time_when_dates_are_same_should_return_one_day(
+    dates_df,
+):
     """Test that same start and end date results in 1 day cycle time."""
     result = convert_dates_to_cycle_time(dates_df)
     assert result.loc[0, "cycle_time_days"] == 1
 
 
-def test_convert_dates_to_cycle_time_different_dates_should_calculate_correctly(
+def test_convert_dates_to_cycle_time_when_dates_are_different_should_calculate_inclusive_days(
     dates_df,
 ):
     """Test that different dates calculate cycle time correctly (inclusive)."""
     result = convert_dates_to_cycle_time(dates_df)
-    # 2024-01-01 to 2024-01-02 = 2 days inclusive
     assert result.loc[1, "cycle_time_days"] == 2
-    # 2024-01-01 to 2024-01-03 = 3 days inclusive
     assert result.loc[2, "cycle_time_days"] == 3
-    # 2024-01-01 to 2024-01-05 = 5 days inclusive
     assert result.loc[3, "cycle_time_days"] == 5
-    # 2024-01-01 to 2024-01-10 = 10 days inclusive
     assert result.loc[4, "cycle_time_days"] == 10
 
 
-def test_convert_dates_to_cycle_time_without_date_columns_should_return_unchanged():
+def test_convert_dates_to_cycle_time_when_no_date_columns_should_return_unchanged():
     """Test that DataFrame without date columns is returned unchanged."""
     df = pd.DataFrame({"id": [1, 2], "cycle_time_days": [2, 4], "tags": ["a", "b"]})
     result = convert_dates_to_cycle_time(df)
     pd.testing.assert_frame_equal(result, df)
 
 
-def test_convert_dates_to_cycle_time_with_invalid_dates_should_use_minimum():
+def test_convert_dates_to_cycle_time_when_dates_are_invalid_should_return_minimum_one_day():
     """Test that invalid dates result in minimum cycle time of 1 day."""
     df = pd.DataFrame(
         {
@@ -84,11 +82,10 @@ def test_convert_dates_to_cycle_time_with_invalid_dates_should_use_minimum():
         }
     )
     result = convert_dates_to_cycle_time(df)
-    # All should be 1 day (minimum) due to invalid dates
     assert all(result["cycle_time_days"] == 1)
 
 
-def test_convert_dates_to_cycle_time_with_negative_difference_should_use_minimum():
+def test_convert_dates_to_cycle_time_when_difference_is_negative_should_return_minimum_one_day():
     """Test that negative date differences result in minimum cycle time of 1 day."""
     df = pd.DataFrame(
         {
@@ -102,7 +99,7 @@ def test_convert_dates_to_cycle_time_with_negative_difference_should_use_minimum
     assert result.loc[0, "cycle_time_days"] == 1
 
 
-def test_convert_dates_to_cycle_time_with_fractional_days_should_round_up():
+def test_convert_dates_to_cycle_time_when_days_are_fractional_should_round_up():
     """Test that fractional days are rounded up correctly."""
     df = pd.DataFrame(
         {
@@ -113,9 +110,7 @@ def test_convert_dates_to_cycle_time_with_fractional_days_should_round_up():
         }
     )
     result = convert_dates_to_cycle_time(df)
-    # Same day (8 hours) should be 1 day
     assert result.loc[0, "cycle_time_days"] == 1
-    # Next day (24 hours) should be 2 days (rounded up)
     assert result.loc[1, "cycle_time_days"] == 2
 
 
@@ -125,7 +120,6 @@ def test_forecast_days_for_work_items_when_dataframe_is_valid_should_return_expe
     result = forecast_days_for_work_items(
         minimal_df, num_work_items=2, num_iterations=100
     )
-
     assert set(result.keys()) == {
         "simulated_durations",
         "percentiles",
@@ -139,9 +133,7 @@ def test_forecast_days_for_work_items_when_dataframe_is_valid_should_return_expe
 
 def test_forecast_days_for_work_items_when_dataframe_is_empty_should_return_empty_results():
     empty_df = pd.DataFrame({"id": [], "cycle_time_days": [], "tags": []})
-
     result = forecast_days_for_work_items(empty_df, num_work_items=2, num_iterations=10)
-
     assert result["simulated_durations"] == []
     assert result["percentiles"] == {}
     assert result["percentile_dates"] == {}
@@ -153,18 +145,14 @@ def test_forecast_days_for_work_items_when_all_cycle_times_are_equal_should_retu
     df = pd.DataFrame(
         {"id": [1, 2, 3], "cycle_time_days": [5, 5, 5], "tags": ["a", "b", "c"]}
     )
-
     result = forecast_days_for_work_items(df, num_work_items=3, num_iterations=50)
-
     vals = list(result["percentiles"].values())
     assert all(v == vals[0] for v in vals)
 
 
 def test_forecast_days_for_work_items_when_dataframe_has_one_row_should_return_simulation_results():
     df = pd.DataFrame({"id": [1], "cycle_time_days": [7], "tags": ["a"]})
-
     result = forecast_days_for_work_items(df, num_work_items=2, num_iterations=10)
-
     assert len(result["simulated_durations"]) == 10
     import numpy as np
 
@@ -176,9 +164,7 @@ def test_forecast_days_for_work_items_when_dataframe_has_one_row_should_return_s
 
 def test_forecast_days_for_work_items_when_cycle_time_column_is_missing_should_return_empty_results():
     df = pd.DataFrame({"id": [1, 2, 3], "tags": ["a", "b", "c"]})
-
     result = forecast_days_for_work_items(df, num_work_items=2, num_iterations=10)
-
     assert result["simulated_durations"] == []
     assert result["percentiles"] == {}
     assert result["percentile_dates"] == {}
@@ -190,7 +176,6 @@ def test_forecast_work_items_in_period_when_dataframe_is_valid_should_return_exp
     result = forecast_work_items_in_period(
         minimal_df, start_date="2024-01-01", end_date="2024-01-10", num_iterations=20
     )
-
     assert set(result.keys()) == {
         "simulated_work_items",
         "percentiles",
@@ -202,9 +187,8 @@ def test_forecast_work_items_in_period_when_dataframe_is_valid_should_return_exp
     assert result["percentiles"]
 
 
-def test_get_next_business_day_weekday_returns_next_day(mocker):
+def test_get_next_business_day_when_today_is_weekday_should_return_next_day(mocker):
     """Test that get_next_business_day returns the next day when today is a weekday."""
-    # Mock today as Monday (weekday 0)
     mock_datetime = mocker.patch("monte_carlo.datetime")
     mock_datetime.now.return_value = datetime(2024, 1, 1)  # Monday
     result = get_next_business_day()
@@ -212,9 +196,8 @@ def test_get_next_business_day_weekday_returns_next_day(mocker):
     assert result == expected
 
 
-def test_get_next_business_day_friday_skips_weekend(mocker):
+def test_get_next_business_day_when_today_is_friday_should_skip_weekend(mocker):
     """Test that get_next_business_day skips weekend when today is Friday."""
-    # Mock today as Friday (weekday 4)
     mock_datetime = mocker.patch("monte_carlo.datetime")
     mock_datetime.now.return_value = datetime(2024, 1, 5)  # Friday
     result = get_next_business_day()
@@ -222,9 +205,8 @@ def test_get_next_business_day_friday_skips_weekend(mocker):
     assert result == expected
 
 
-def test_get_next_business_day_saturday_skips_weekend(mocker):
+def test_get_next_business_day_when_today_is_saturday_should_skip_weekend(mocker):
     """Test that get_next_business_day skips weekend when today is Saturday."""
-    # Mock today as Saturday (weekday 5)
     mock_datetime = mocker.patch("monte_carlo.datetime")
     mock_datetime.now.return_value = datetime(2024, 1, 6)  # Saturday
     result = get_next_business_day()
@@ -232,42 +214,30 @@ def test_get_next_business_day_saturday_skips_weekend(mocker):
     assert result == expected
 
 
-def test_forecast_work_items_in_period_same_start_end_date():
+def test_forecast_work_items_in_period_when_start_and_end_date_are_same_should_handle():
     """Test that forecast_work_items_in_period handles same start and end date."""
     df = pd.DataFrame({"id": [1], "cycle_time_days": [2]})
-
-    # Test with same start and end date
     result = forecast_work_items_in_period(
         df, start_date="2024-01-01", end_date="2024-01-01", num_iterations=10
     )
-
-    # Should handle same start and end date
     assert result["start_date"] == "2024-01-01"
     assert result["end_date"] == "2024-01-01"
 
 
-def test_forecast_work_items_in_period_short_period_zero_items():
+def test_forecast_work_items_in_period_when_period_is_too_short_should_return_zero_items():
     """Test that forecast_work_items_in_period returns zero items for very short periods."""
     df = pd.DataFrame({"id": [1], "cycle_time_days": [10]})  # Long cycle time
-
-    # Very short period that will trigger the else branch
     result = forecast_work_items_in_period(
         df, start_date="2024-01-01", end_date="2024-01-02", num_iterations=10
     )
-
-    # Should return 0 work items since cycle time (10 days) > period (1 day)
     assert all(item == 0 for item in result["simulated_work_items"])
 
 
-def test_forecast_work_items_in_period_mixed_cycle_times():
+def test_forecast_work_items_in_period_when_cycle_times_are_mixed_should_handle_correctly():
     """Test that forecast_work_items_in_period handles mixed cycle times correctly."""
     df = pd.DataFrame({"id": [1, 2], "cycle_time_days": [1, 5]})  # Mixed cycle times
-
-    # Medium period that will sometimes trigger the else branch
     result = forecast_work_items_in_period(
         df, start_date="2024-01-01", end_date="2024-01-03", num_iterations=100
     )
-
-    # Should have some work items completed
     assert len(result["simulated_work_items"]) == 100
     assert any(item > 0 for item in result["simulated_work_items"])

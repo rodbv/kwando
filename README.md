@@ -47,13 +47,19 @@ Watch: [Your Project Behaves Like a Hurricane. Forecast It Like One (YouTube)](h
 
 ## Data Format
 
-Your CSV file must have at least one column `cycle_time_days` with positive numeric values representing the time to complete each work item.
+Your CSV file must have the following columns:
+- `id`: Unique identifier for each work item
+- `start_date`: Start date of the work item in ISO 8601 format (YYYY-MM-DD)
+- `end_date`: End date of the work item in ISO 8601 format (YYYY-MM-DD)
 
-**Required columns:**
-- `cycle_time_days`: Number of days to complete each work item
+Example:
 
-**Optional columns:**
-- `tags`: Comma-separated tags for filtering (e.g., "bug,frontend,high-priority")
+```csv
+id,start_date,end_date
+1,2024-01-01,2024-01-01
+2,2024-01-01,2024-01-02
+3,2024-01-01,2024-01-03
+```
 
 ## How to Use
 
