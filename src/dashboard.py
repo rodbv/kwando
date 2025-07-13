@@ -81,7 +81,7 @@ def load_and_clean_data(filename: str) -> pd.DataFrame:
         return pd.DataFrame({"Error": [str(e)]})
 
 
-def get_data_stats_md(df):
+def get_data_stats_as_markdown(df):
     """
     Calculate and display data statistics
     """
@@ -123,7 +123,7 @@ data_preview_pane = pn.pane.DataFrame(
 )
 data_stats_pane = pn.pane.Markdown(
     (
-        get_data_stats_md(initial_data)
+        get_data_stats_as_markdown(initial_data)
         if file_selector.value
         else "### Data Statistics\n\nNo file available."
     ),
@@ -154,7 +154,7 @@ def handle_file_selection(event):
     data_preview_pane.object = (
         full_df.head(100) if "Error" not in full_df.columns else full_df
     )
-    data_stats_pane.object = get_data_stats_md(full_df)
+    data_stats_pane.object = get_data_stats_as_markdown(full_df)
 
 
 file_selector.param.watch(handle_file_selection, "value")
@@ -360,59 +360,116 @@ def get_data_source_info():
     return pn.pane.Markdown(f"**Data Source:** {file_selector.value}")
 
 
-# Create help text with Monte Carlo explanation
-help_text = pn.pane.Markdown(
-    """
-## How These Forecasts Work
+# Load help text from markdown file
+def load_help_text():
+    """Load help text from markdown file."""
+    try:
+        help_file_path = "docs/monte_carlo_help.md"
+        with open(help_file_path, encoding="utf-8") as f:
+            help_content = f.read()
+        return pn.pane.Markdown(help_content)
+    except FileNotFoundError:
+        # Fallback to basic help text if file not found
+        return pn.pane.Markdown(
+            "## Help\n\nHelp documentation not found. Please check the docs/monte_carlo_help.md file."
+        )
+    except Exception as e:
+        # Fallback to basic help text if any error
+        return pn.pane.Markdown(
+            f"## Help\n\nError loading help documentation: {str(e)}"
+        )
 
-### What is Monte Carlo Simulation?
-Monte Carlo simulation is a mathematical technique that helps us make predictions in uncertain environments. In software delivery, we use it to forecast delivery dates or team capacity by:
-1. Looking at our historical completion data (how long items actually took)
-2. Running thousands of "simulations" using random samples from this history
-3. Analyzing the results to provide confidence levels
 
-### What Data Are We Using?
-- We analyze your team's actual cycle times (how long items took from start to finish)
-- Each work item's cycle time captures the full "system time" including delays, dependencies, and rework
-- We use this real data rather than estimates because it includes all the natural variation in your delivery system
+help_text = load_help_text()
 
-### How to Read the Results
-- The forecasts show different confidence levels (70% to 98%)
-- An "80% confidence" means that, based on your historical performance, you have an 80% chance of hitting that target
-- Higher confidence levels (90%, 95%) give you more certainty but predict longer durations
-- Lower confidence levels (70%, 80%) are more aggressive but carry more risk
 
-### Key Concepts
-1. **Using History vs Estimates**: Rather than relying on up-front estimates, we use your actual delivery history. This captures your team's real-world performance including all the normal delays and uncertainties.
+def load_about_text():
+    """Load about text from markdown file."""
+    try:
+        about_file_path = "docs/about.md"
+        with open(about_file_path, encoding="utf-8") as f:
+            about_content = f.read()
+        return pn.pane.Markdown(about_content, styles={"font-size": "14px"})
+    except FileNotFoundError:
+        # Fallback to basic about text if file not found
+        return pn.pane.Markdown(
+            "## About\n\nAbout information not found. Please check the docs/about.md file.",
+            styles={"font-size": "14px"},
+        )
+    except Exception as e:
+        # Fallback to basic about text if any error
+        return pn.pane.Markdown(
+            f"## About\n\nError loading about information: {str(e)}",
+            styles={"font-size": "14px"},
+        )
 
-2. **Probabilistic vs Deterministic**: Instead of a single date, we provide a range of possibilities with confidence levels. This better reflects the inherent uncertainty in knowledge work.
 
-3. **System Thinking**: The cycle times reflect your entire delivery system - not just coding time but also reviews, testing, deployments, and any delays. This gives you a more realistic picture of delivery times.
+def _create_work_items_content():
+    """Create content for work items simulation."""
+    return pn.Column(
+        pn.Row(
+            pn.Column(
+                get_data_source_info(),
+                num_cards_slider,
+                sizing_mode="stretch_width",
+            ),
+        ),
+        work_items_results,
+    )
 
-### When to Use Each Simulation
-- **"When will it be done?"** - Use when you have a specific number of work items and need to forecast completion dates
-- **"How many items?"** - Use when you have a time period and need to forecast how many items you can complete
 
-### Making Better Decisions
-- Use higher confidence levels (90%+) for important commitments or dependencies
-- Use lower confidence levels (70-80%) for internal planning or less critical items
-- Look for ways to reduce your cycle times to improve all forecasts
-- Remember: the goal is to make informed decisions, not to get exact predictions
+def _create_period_content():
+    """Create content for time period simulation."""
+    return pn.Column(
+        pn.Row(
+            pn.Column(
+                get_data_source_info(),
+                period_start_date,
+                period_end_date,
+                sizing_mode="stretch_width",
+            ),
+        ),
+        period_results,
+    )
 
-### Learn More
 
-**Books by Daniel Vacanti:**
-- <a href="https://actionableagile.com/books/aamfp" target="_blank">Actionable Agile Metrics for Predictability</a> - The definitive guide to flow metrics and analytics
-- <a href="https://leanpub.com/whenwillitbedone" target="_blank">When Will It Be Done?</a> - Lean-Agile Forecasting to Answer Your Customers' Most Important Question
-- <a href="https://actionableagile.com/books/aamfp-vol2" target="_blank">Actionable Agile Metrics Volume II</a> - Advanced Topics in Predictability
+def _create_data_source_content():
+    """Create content for data source page."""
+    return pn.Column(
+        pn.Row(
+            pn.Column(
+                file_input,
+                file_selector,
+                pn.layout.Spacer(height=10),
+                sizing_mode="stretch_width",
+            ),
+        ),
+        pn.layout.Spacer(height=20),
+        pn.Row(
+            pn.Column(
+                pn.pane.Markdown("### Data Preview (First 100 rows)"),
+                data_preview_pane,
+                sizing_mode="stretch_width",
+            ),
+            data_stats_pane,
+            sizing_mode="stretch_width",
+        ),
+        pn.layout.Spacer(height=30),
+        pn.pane.Markdown("**CSV file must have the following columns:**"),
+        pn.pane.Markdown("- `id`: Unique identifier for each work item"),
+        pn.pane.Markdown(
+            "- `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD"
+        ),
+        pn.pane.Markdown("- `end_date`: End date of the work item in ISO 8601 format"),
+    )
 
-**Additional Resources:**
-- <a href="https://prokanban.org/" target="_blank">ProKanban.org</a> - Community for learning about Kanban and flow metrics
-- <a href="https://www.youtube.com/watch?v=j1FTNVRkJYg" target="_blank">Why Monte Carlo Simulation?</a> - Video explanation by Daniel Vacanti
 
-*Based on concepts from ActionableAgile™ and "Actionable Agile Metrics for Predictability" by Daniel Vacanti.*
-"""
-)
+# Content mapping for different simulation types
+CONTENT_MAPPING = {
+    WHEN_LABEL: (_create_work_items_content, WHEN_LABEL),
+    HOW_MANY_LABEL: (_create_period_content, HOW_MANY_LABEL),
+    DATA_SOURCE_LABEL: (_create_data_source_content, DATA_SOURCE_LABEL),
+}
 
 
 # Create a dynamic panel with smooth transitions
@@ -422,62 +479,11 @@ def get_main_content(show_help, sim_type):
         content = help_text
         title = "About Monte Carlo Simulation"
     else:
-        if sim_type == WHEN_LABEL:
-            content = pn.Column(
-                pn.Row(
-                    pn.Column(
-                        get_data_source_info(),
-                        num_cards_slider,
-                        sizing_mode="stretch_width",
-                    ),
-                ),
-                work_items_results,
-            )
-            title = WHEN_LABEL
-        elif sim_type == HOW_MANY_LABEL:
-            content = pn.Column(
-                pn.Row(
-                    pn.Column(
-                        get_data_source_info(),
-                        period_start_date,
-                        period_end_date,
-                        sizing_mode="stretch_width",
-                    ),
-                ),
-                period_results,
-            )
-            title = HOW_MANY_LABEL
-        else:  # Data Source
-            content = pn.Column(
-                pn.Row(
-                    pn.Column(
-                        file_input,
-                        file_selector,
-                        pn.layout.Spacer(height=10),
-                        sizing_mode="stretch_width",
-                    ),
-                ),
-                pn.layout.Spacer(height=20),
-                pn.Row(
-                    pn.Column(
-                        pn.pane.Markdown("### Data Preview (First 100 rows)"),
-                        data_preview_pane,
-                        sizing_mode="stretch_width",
-                    ),
-                    data_stats_pane,
-                    sizing_mode="stretch_width",
-                ),
-                pn.layout.Spacer(height=30),
-                pn.pane.Markdown("**CSV file must have the following columns:**"),
-                pn.pane.Markdown("- `id`: Unique identifier for each work item"),
-                pn.pane.Markdown(
-                    "- `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD"
-                ),
-                pn.pane.Markdown(
-                    "- `end_date`: End date of the work item in ISO 8601 format"
-                ),
-            )
-            title = DATA_SOURCE_LABEL
+        content_func, title = CONTENT_MAPPING.get(
+            sim_type, CONTENT_MAPPING[DATA_SOURCE_LABEL]
+        )
+        content = content_func()
+
     return pn.Column(
         pn.pane.Markdown(f"# {title}"),
         content,
@@ -497,30 +503,7 @@ button_column = pn.Column(
 )
 
 # About section for sidebar
-about_text = pn.pane.Markdown(
-    """
-### About
-
-This dashboard uses Monte Carlo simulation to forecast either:
-
-1. When a specific number of work items will be completed
-2. How many work items can be completed in a given time period
-
-The forecasts are based on historical completion data.
-
-<a href="https://github.com/rodbv/kwando" target="_blank" style="display:inline-flex; align-items:center; text-decoration:none;">
-  <img src="https://e7.pngegg.com/pngimages/646/324/png-clipart-github-computer-icons-github-logo-monochrome-thumbnail.png" alt="GitHub" style="height:1.2em; margin-right:0.3em; vertical-align:middle;"/>
-  GitHub
-</a>
-
----
-
-**Credits:**
-- Monte Carlo simulation implementation adapted from [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
-- Inspired by the book [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) by Daniel Vacanti
-""",
-    styles={"font-size": "14px"},
-)
+about_text = load_about_text()
 
 # Sidebar with simulation type selection, basic about, and help button
 sidebar = pn.Column(
