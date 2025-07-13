@@ -611,10 +611,14 @@ template.param.watch(update_theme, "theme")
 # Mark the template as servable
 template.servable()
 
-# Add development mode support
+# Add development mode support - only run when explicitly called
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dev", action="store_true", help="Run in development mode")
-    args = parser.parse_args()
+    import sys
 
-    template.show(port=5006, dev=args.dev)
+    if len(sys.argv) > 1 and sys.argv[1] == "--dev":
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--dev", action="store_true", help="Run in development mode"
+        )
+        args = parser.parse_args()
+        template.show(port=5006, dev=args.dev)
