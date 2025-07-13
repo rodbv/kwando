@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import panel as pn
 from monte_carlo import (
+    convert_dates_to_cycle_time,
     forecast_days_for_work_items,
     forecast_work_items_in_period,
     get_next_business_day,
@@ -69,13 +70,12 @@ def get_current_data_file():
 def clean_and_filter_data(df: pd.DataFrame, selected_tags=None) -> pd.DataFrame:
     """
     Clean and filter a DataFrame:
-    - Filters out records with a cycle_time_days <= 0.
     - If selected_tags is provided, filters rows to include:
       * Rows that have ANY of the selected tags
       * Rows with no tags (empty or NaN in tags column)
     """
     try:
-        cleaned = df[df["cycle_time_days"] > 0].copy()
+        cleaned = df.copy()
         if selected_tags and len(selected_tags) > 0 and "tags" in cleaned.columns:
             include_mask = pd.Series([False] * len(cleaned), index=cleaned.index)
             for idx, row in cleaned.iterrows():
@@ -92,13 +92,22 @@ def clean_and_filter_data(df: pd.DataFrame, selected_tags=None) -> pd.DataFrame:
         return pd.DataFrame({"Error": [f"Could not clean/filter data: {str(e)}"]})
 
 
-# Update load_and_clean_data to use the new cleaning function
 def load_and_clean_data(filename: str, selected_tags=None) -> pd.DataFrame:
     """
     Load data from a CSV file and clean/filter it.
+    Only supports new format (start_date, end_date).
     """
     try:
         df = pd.read_csv(filename)
+        if "start_date" not in df.columns or "end_date" not in df.columns:
+            return pd.DataFrame(
+                {
+                    "Error": [
+                        "CSV must have start_date and end_date columns in ISO 8601 format."
+                    ]
+                }
+            )
+        df = convert_dates_to_cycle_time(df)
         return clean_and_filter_data(df, selected_tags)
     except Exception as e:
         return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
@@ -117,7 +126,16 @@ def get_data_stats_md(df):
         original_df = pd.read_csv(file_selector.value)
 
         # Count invalid rows (cycle_time_days <= 0)
-        invalid_cycle_time = len(original_df[original_df["cycle_time_days"] <= 0])
+        # Handle both old format (cycle_time_days) and new format (start_date, end_date)
+        if "start_date" in original_df.columns and "end_date" in original_df.columns:
+            # For new format, count rows with invalid dates
+            invalid_dates = (
+                pd.to_datetime(original_df["start_date"], errors="coerce").isna()
+                | pd.to_datetime(original_df["end_date"], errors="coerce").isna()
+            )
+            invalid_cycle_time = invalid_dates.sum()
+        else:
+            invalid_cycle_time = 0
 
         # Count rows before min_date (2018-01-01) - removed since we're not treating this as invalid data
 
@@ -619,7 +637,10 @@ def get_main_content(show_help, sim_type):
                 pn.pane.Markdown("**CSV file must have the following columns:**"),
                 pn.pane.Markdown("- `id`: Unique identifier for each work item"),
                 pn.pane.Markdown(
-                    "- `cycle_time_days`: Time taken to complete the work item"
+                    "- `start_date`: Start date of the work item in ISO 8601 format"
+                ),
+                pn.pane.Markdown(
+                    "- `end_date`: End date of the work item in ISO 8601 format"
                 ),
                 pn.pane.Markdown(
                     "- `tags`: Comma-separated tags for filtering (optional)"

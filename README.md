@@ -147,7 +147,7 @@ Ou veja outras opções na [documentação oficial](https://github.com/casey/jus
 
 Contribuições são bem-vindas! Veja o [Guia de Contribuição](CONTRIBUTING.md) para detalhes sobre como enviar issues, solicitações de recursos e pull requests.
 
-## Código de Conduta
+## Código de Conduta`
 
 Este projeto segue um [Código de Conduta](CODE_OF_CONDUCT.md). Ao participar, você deve seguir este código.
 

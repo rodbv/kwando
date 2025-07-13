@@ -8,6 +8,50 @@ import pandas as pd
 PERCENTILES = [70, 80, 90, 95, 98]
 
 
+def convert_dates_to_cycle_time(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert start_date and end_date columns to cycle_time_days.
+
+    Args:
+        df: DataFrame with start_date and end_date columns in ISO 8601 format
+
+    Returns:
+        DataFrame with cycle_time_days column added/updated
+
+    The function:
+    - Parses dates in ISO 8601 format (both long and short)
+    - Calculates difference between end_date and start_date
+    - Rounds up to the next day (e.g., 1.1 days becomes 2 days)
+    - If same date in both columns, result is 1 day
+    """
+    if "start_date" not in df.columns or "end_date" not in df.columns:
+        return df
+
+    df_copy = df.copy()
+
+    # Convert date columns to datetime, handling various ISO formats
+    for col in ["start_date", "end_date"]:
+        df_copy[col] = pd.to_datetime(df_copy[col], format="mixed", errors="coerce")
+
+    # Calculate the difference in days
+    # Convert to date objects to get calendar days
+    start_dates = df_copy["start_date"].dt.date
+    end_dates = df_copy["end_date"].dt.date
+
+    # Calculate calendar day difference
+    date_diff = [
+        (ed - sd).days if pd.notnull(ed) and pd.notnull(sd) else float("nan")
+        for sd, ed in zip(start_dates, end_dates, strict=True)
+    ]
+    date_diff = pd.Series(date_diff, index=df_copy.index)
+    cycle_time = date_diff.apply(lambda d: max(1, int(d) + 1) if pd.notnull(d) else 1)
+
+    # Add or update cycle_time_days column
+    df_copy["cycle_time_days"] = cycle_time.astype(int)
+
+    return df_copy
+
+
 def get_next_business_day() -> date:
     """Calculate the next business day from today"""
     next_day = datetime.now() + timedelta(days=1)
