@@ -2,6 +2,9 @@
 
 Dashboard para prever a conclusão de itens de trabalho usando simulações Monte Carlo. Feito com Python e [Panel](https://panel.holoviz.org/).
 
+<img width="1435" height="759" alt="image" src="https://github.com/user-attachments/assets/62971b26-4dd1-45fd-b679-859f5d79d3a0" />
+
+
 ## Funcionalidades
 
 - **Prever Datas de Conclusão**: Calcular quando um número específico de itens será concluído
