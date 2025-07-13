@@ -25,6 +25,7 @@ dev = [
     "pytest-watch>=4.2.0",
     "pytest-sugar>=0.9.7",
 ]
+e2e = ["playwright>=1.40.0", "pytest>=8.0.0"]
 
 [tool.pytest.ini_options]
 addopts = "-ra"
@@ -56,8 +57,4 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [dependency-groups]
-dev = [
-    "coverage>=7.9.2",
-    "pytest-cov>=6.2.1",
-    "pytest-mock>=3.14.1",
-]
+dev = ["coverage>=7.9.2", "pytest-cov>=6.2.1", "pytest-mock>=3.14.1"]

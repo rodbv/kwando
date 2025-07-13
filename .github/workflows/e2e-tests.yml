@@ -1,0 +1,52 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright
+        run: |
+          pip install playwright pytest
+          playwright install chromium
+
+      - name: Build Docker image
+        run: |
+          docker build -t kwando-dashboard .
+
+      - name: Start dashboard container
+        run: |
+          docker run -d --name kwando-test -p 5006:5006 kwando-dashboard
+          # Wait for the dashboard to start
+          sleep 10
+
+      - name: Run E2E tests
+        run: |
+          python -m pytest tests/e2e/ -v --tb=short
+
+      - name: Stop dashboard container
+        if: always()
+        run: |
+          docker stop kwando-test || true
+          docker rm kwando-test || true
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-screenshots
+          path: test-results/
