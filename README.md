@@ -1,5 +1,5 @@
 [![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/rodbv/kwando/branch/main/graph/badge.svg)](https://codecov.io/gh/rodbv/kwando)
+![Coverage](https://img.shields.io/badge/coverage-97%25-green)
 
 # KWANDO: Dashboard de Simulação Monte Carlo
 

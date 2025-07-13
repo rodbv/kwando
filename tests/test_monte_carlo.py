@@ -1,9 +1,12 @@
+from datetime import datetime
+
 import pandas as pd
 import pytest
 from monte_carlo import (
     convert_dates_to_cycle_time,
     forecast_days_for_work_items,
     forecast_work_items_in_period,
+    get_next_business_day,
 )
 
 
@@ -197,3 +200,74 @@ def test_forecast_work_items_in_period_when_dataframe_is_valid_should_return_exp
     }
     assert len(result["simulated_work_items"]) == 20
     assert result["percentiles"]
+
+
+def test_get_next_business_day_weekday_returns_next_day(mocker):
+    """Test that get_next_business_day returns the next day when today is a weekday."""
+    # Mock today as Monday (weekday 0)
+    mock_datetime = mocker.patch("monte_carlo.datetime")
+    mock_datetime.now.return_value = datetime(2024, 1, 1)  # Monday
+    result = get_next_business_day()
+    expected = datetime(2024, 1, 2).date()  # Tuesday
+    assert result == expected
+
+
+def test_get_next_business_day_friday_skips_weekend(mocker):
+    """Test that get_next_business_day skips weekend when today is Friday."""
+    # Mock today as Friday (weekday 4)
+    mock_datetime = mocker.patch("monte_carlo.datetime")
+    mock_datetime.now.return_value = datetime(2024, 1, 5)  # Friday
+    result = get_next_business_day()
+    expected = datetime(2024, 1, 8).date()  # Monday
+    assert result == expected
+
+
+def test_get_next_business_day_saturday_skips_weekend(mocker):
+    """Test that get_next_business_day skips weekend when today is Saturday."""
+    # Mock today as Saturday (weekday 5)
+    mock_datetime = mocker.patch("monte_carlo.datetime")
+    mock_datetime.now.return_value = datetime(2024, 1, 6)  # Saturday
+    result = get_next_business_day()
+    expected = datetime(2024, 1, 8).date()  # Monday
+    assert result == expected
+
+
+def test_forecast_work_items_in_period_same_start_end_date():
+    """Test that forecast_work_items_in_period handles same start and end date."""
+    df = pd.DataFrame({"id": [1], "cycle_time_days": [2]})
+
+    # Test with same start and end date
+    result = forecast_work_items_in_period(
+        df, start_date="2024-01-01", end_date="2024-01-01", num_iterations=10
+    )
+
+    # Should handle same start and end date
+    assert result["start_date"] == "2024-01-01"
+    assert result["end_date"] == "2024-01-01"
+
+
+def test_forecast_work_items_in_period_short_period_zero_items():
+    """Test that forecast_work_items_in_period returns zero items for very short periods."""
+    df = pd.DataFrame({"id": [1], "cycle_time_days": [10]})  # Long cycle time
+
+    # Very short period that will trigger the else branch
+    result = forecast_work_items_in_period(
+        df, start_date="2024-01-01", end_date="2024-01-02", num_iterations=10
+    )
+
+    # Should return 0 work items since cycle time (10 days) > period (1 day)
+    assert all(item == 0 for item in result["simulated_work_items"])
+
+
+def test_forecast_work_items_in_period_mixed_cycle_times():
+    """Test that forecast_work_items_in_period handles mixed cycle times correctly."""
+    df = pd.DataFrame({"id": [1, 2], "cycle_time_days": [1, 5]})  # Mixed cycle times
+
+    # Medium period that will sometimes trigger the else branch
+    result = forecast_work_items_in_period(
+        df, start_date="2024-01-01", end_date="2024-01-03", num_iterations=100
+    )
+
+    # Should have some work items completed
+    assert len(result["simulated_work_items"]) == 100
+    assert any(item > 0 for item in result["simulated_work_items"])

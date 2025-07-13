@@ -59,4 +59,5 @@ line-ending = "auto"
 dev = [
     "coverage>=7.9.2",
     "pytest-cov>=6.2.1",
+    "pytest-mock>=3.14.1",
 ]
