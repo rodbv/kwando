@@ -11,7 +11,7 @@ Dashboard para prever a conclusão de itens de trabalho usando simulações Mont
 
 Você pode executar o dashboard diretamente no navegador sem instalar nada:
 
-**[🌐 Executar KWANDO Online](https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard){:target="_blank"}**
+<a href="https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard" target="_blank">**🌐 Executar KWANDO Online**</a>
 
 ## Funcionalidades
 

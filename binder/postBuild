@@ -1,3 +1,4 @@
 #!/bin/bash
 # Start the Panel dashboard server for Binder
+cd /home/jovyan/work
 panel serve src/dashboard.py --port 8888 --address 0.0.0.0 --allow-websocket-origin=* &
