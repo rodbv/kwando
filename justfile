@@ -75,3 +75,11 @@ dev-cycle: format lint test
 
 # Build and check everything
 check-all: clean install-dev setup-hooks format lint test
+
+coverage:
+    # Run tests with coverage and generate coverage.xml
+    uv run pytest --cov=src --cov-report=xml
+
+coverage-html:
+    # Run tests with coverage and generate HTML report
+    uv run pytest --cov=src --cov-report=html
