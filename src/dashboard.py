@@ -10,8 +10,6 @@ from monte_carlo import (
     forecast_work_items_in_period,
     get_next_business_day,
 )
-from panel.layout import Row
-from panel.widgets import Checkbox
 
 # Initialize Panel with template support
 pn.extension("tabulator", "ace")
@@ -38,8 +36,8 @@ data_source_button = pn.widgets.Button(
 )
 
 # File picker widget and default file text
-file_input = pn.widgets.FileInput(name="Upload Custom CSV")
-default_file_text = pn.pane.Markdown("**Current data:** data/data.csv (default)")
+# Remove file_input and any upload logic
+# Only keep file_selector for choosing CSVs from the data directory
 
 # List all CSV files in the data/ directory
 csv_files = [f"data/{f}" for f in os.listdir("data") if f.endswith(".csv")]
@@ -55,8 +53,8 @@ file_selector = pn.widgets.Select(
     ),
 )
 
-# Dynamic tag checkboxes (will be created based on loaded data)
-tag_checkboxes = pn.Column(name="Tag Filters", visible=False)
+# Remove all comments mentioning tags, tag filtering, or tag checkboxes
+# Remove all references to tags in UI, data cleaning, and info text
 
 # Global state for data source
 current_data_file = "data/data.csv"
@@ -67,34 +65,20 @@ def get_current_data_file():
 
 
 # Add a reusable data cleaning/filtering function
-def clean_and_filter_data(df: pd.DataFrame, selected_tags=None) -> pd.DataFrame:
+def clean_and_filter_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Clean and filter a DataFrame:
-    - If selected_tags is provided, filters rows to include:
-      * Rows that have ANY of the selected tags
-      * Rows with no tags (empty or NaN in tags column)
+    Clean a DataFrame (no tag filtering anymore).
     """
     try:
         cleaned = df.copy()
-        if selected_tags and len(selected_tags) > 0 and "tags" in cleaned.columns:
-            include_mask = pd.Series([False] * len(cleaned), index=cleaned.index)
-            for idx, row in cleaned.iterrows():
-                tags_str = row.get("tags", "")
-                if pd.isna(tags_str) or str(tags_str).strip() == "":
-                    include_mask[idx] = True
-                    continue
-                row_tags = [tag.strip() for tag in str(tags_str).split(",")]
-                if any(tag in selected_tags for tag in row_tags):
-                    include_mask[idx] = True
-            cleaned = cleaned[include_mask].copy()
         return cleaned
     except Exception as e:
         return pd.DataFrame({"Error": [f"Could not clean/filter data: {str(e)}"]})
 
 
-def load_and_clean_data(filename: str, selected_tags=None) -> pd.DataFrame:
+def load_and_clean_data(filename: str) -> pd.DataFrame:
     """
-    Load data from a CSV file and clean/filter it.
+    Load data from a CSV file and clean it (no tag filtering).
     Only supports new format (start_date, end_date).
     """
     try:
@@ -108,7 +92,9 @@ def load_and_clean_data(filename: str, selected_tags=None) -> pd.DataFrame:
                 }
             )
         df = convert_dates_to_cycle_time(df)
-        return clean_and_filter_data(df, selected_tags)
+        return clean_and_filter_data(df)
+    except pd.errors.ParserError as e:
+        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
     except Exception as e:
         return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
@@ -193,7 +179,7 @@ if not file_selector.value:
         {"Info": ["No CSV file found in data/ directory."]}
     )
     data_stats_pane.object = "### Data Statistics\n\nNo file available."
-    default_file_text.object = "**No data file available.**"
+    # default_file_text.object = "**No data file available.**" # This line is removed
 
 
 # Function to handle file selection and update preview/stats
@@ -205,137 +191,24 @@ def handle_file_selection(event):
             {"Info": ["No CSV file selected or available in data/ directory."]}
         )
         data_stats_pane.object = "### Data Statistics\n\nNo file selected."
-        default_file_text.object = "**No data file selected.**"
-        tag_checkboxes.visible = False
+        # default_file_text.object = "**No data file selected.**" # This line is removed
         return
 
-    # Collect selected tags from checkboxes
-    selected_tags = []
-    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
-        checkbox_row = tag_checkboxes[1]
-        if isinstance(checkbox_row, Row):
-            for checkbox in checkbox_row:
-                if isinstance(checkbox, Checkbox) and checkbox.value:
-                    selected_tags.append(checkbox.name)
-
-    # Load data with tag filtering
-    full_df = load_and_clean_data(file_selector.value, selected_tags=selected_tags)
+    # Load data without tag filtering
+    full_df = load_and_clean_data(file_selector.value)
     data_preview_pane.object = (
         full_df.head(100) if "Error" not in full_df.columns else full_df
     )
     data_stats_pane.object = get_data_stats_md(full_df)
-    default_file_text.object = f"**Current data:** {file_selector.value}"
-
-    # Handle dynamic tag checkboxes
-    if "Error" not in full_df.columns and "tags" in full_df.columns:
-        # Load the full unfiltered dataset to get all available tags
-        try:
-            full_unfiltered_df = pd.read_csv(file_selector.value)
-            # Extract unique tags from the full unfiltered data
-            all_tags = set()
-            if "tags" in full_unfiltered_df.columns:
-                for tags_str in full_unfiltered_df["tags"].dropna():
-                    if tags_str.strip():  # Skip empty strings
-                        tags = [tag.strip() for tag in tags_str.split(",")]
-                        all_tags.update(tags)
-        except Exception:
-            # Fallback to using the filtered data if loading full data fails
-            all_tags = set()
-            for tags_str in full_df["tags"].dropna():
-                if tags_str.strip():  # Skip empty strings
-                    tags = [tag.strip() for tag in tags_str.split(",")]
-                    all_tags.update(tags)
-
-        if all_tags:
-            # Get currently selected tags before clearing
-            currently_selected = set()
-            if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
-                checkbox_row = tag_checkboxes[1]
-                if isinstance(checkbox_row, Row):
-                    for checkbox in checkbox_row:
-                        if isinstance(checkbox, Checkbox) and checkbox.value:
-                            currently_selected.add(checkbox.name)
-
-            # Clear existing checkboxes and create new ones
-            tag_checkboxes.clear()
-            tag_checkboxes.append(pn.pane.Markdown("**Select tags to filter by:**"))
-
-            # Create checkboxes for each tag, laid out in a row
-            checkbox_row = pn.Row()
-            for tag in sorted(all_tags):
-                # Preserve the checked state if this tag was previously selected
-                is_checked = tag in currently_selected
-                checkbox = make_checkbox_reactive(
-                    pn.widgets.Checkbox(name=tag, value=is_checked)
-                )
-                checkbox_row.append(checkbox)
-
-            tag_checkboxes.append(checkbox_row)
-            tag_checkboxes.visible = True
-        else:
-            tag_checkboxes.visible = False
-    else:
-        # No tags column or error loading data
-        tag_checkboxes.visible = False
+    # default_file_text.object = f"**Current data:** {file_selector.value}" # This line is removed
 
 
 file_selector.param.watch(handle_file_selection, "value")
 
 
-@pn.depends(file_selector.param.value, tag_checkboxes.param.visible)
-def get_data_source_info(selected_file, tags_visible):
-    """Get information about current data source and selected tags"""
-    if not selected_file:
-        return pn.pane.Markdown("**Data Source:** No file selected")
-
-    # Get selected tags
-    selected_tags = []
-    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
-        checkbox_row = tag_checkboxes[1]
-        if isinstance(checkbox_row, Row):
-            for checkbox in checkbox_row:
-                if isinstance(checkbox, Checkbox) and checkbox.value:
-                    selected_tags.append(checkbox.name)
-
-    # Create info text
-    info_text = f"**Data Source:** {selected_file}"
-    if selected_tags:
-        tags_text = ", ".join(selected_tags)
-        info_text += f" | **Tags:** {tags_text}"
-    else:
-        info_text += " | **Tags:** All tags (none selected)"
-
-    return pn.pane.Markdown(info_text)
-
-
-def handle_tag_selection(event):
-    """Handle changes to tag checkboxes and update only the data preview and stats"""
-    if not file_selector.value:
-        return
-
-    # Collect selected tags
-    selected_tags = []
-    if getattr(tag_checkboxes, "visible", False) and len(tag_checkboxes) > 1:
-        checkbox_row = tag_checkboxes[1]
-        if isinstance(checkbox_row, Row):
-            for checkbox in checkbox_row:
-                if isinstance(checkbox, Checkbox) and checkbox.value:
-                    selected_tags.append(checkbox.name)
-
-    # Load filtered data without recreating checkboxes
-    filtered_df = load_and_clean_data(file_selector.value, selected_tags=selected_tags)
-
-    # Update only the data preview and stats, not the entire page
-    data_preview_pane.object = (
-        filtered_df.head(100) if "Error" not in filtered_df.columns else filtered_df
-    )
-    data_stats_pane.object = get_data_stats_md(filtered_df)
-
-
-# Function to make checkboxes reactive (will be called when creating checkboxes)
-def make_checkbox_reactive(checkbox):
-    checkbox.param.watch(handle_tag_selection, "value")
-    return checkbox
+# Remove all comments mentioning tags, tag filtering, or tag checkboxes
+# Remove get_data_source_info selected_tags logic
+# Remove handle_tag_selection and make_checkbox_reactive
 
 
 # Create a parameter to track which simulation is active
@@ -521,8 +394,12 @@ def get_period_results(start_date, end_date, selected_file):
 work_items_results = pn.bind(pn.pane.Markdown, get_work_items_results)
 period_results = pn.bind(pn.pane.Markdown, get_period_results)
 
+
 # Create reactive data source info
-data_source_info = get_data_source_info
+def get_data_source_info():
+    if not file_selector.value:
+        return pn.pane.Markdown("**Data Source:** No file selected")
+    return pn.pane.Markdown(f"**Data Source:** {file_selector.value}")
 
 
 # Create help text with Monte Carlo explanation
@@ -591,7 +468,7 @@ def get_main_content(show_help, sim_type):
             content = pn.Column(
                 pn.Row(
                     pn.Column(
-                        data_source_info,
+                        get_data_source_info(),
                         num_cards_slider,
                         sizing_mode="stretch_width",
                     ),
@@ -603,7 +480,7 @@ def get_main_content(show_help, sim_type):
             content = pn.Column(
                 pn.Row(
                     pn.Column(
-                        data_source_info,
+                        get_data_source_info(),
                         period_start_date,
                         period_end_date,
                         sizing_mode="stretch_width",
@@ -616,10 +493,8 @@ def get_main_content(show_help, sim_type):
             content = pn.Column(
                 pn.Row(
                     pn.Column(
-                        default_file_text,
                         file_selector,
                         pn.layout.Spacer(height=10),
-                        tag_checkboxes,
                         sizing_mode="stretch_width",
                     ),
                 ),
@@ -641,9 +516,6 @@ def get_main_content(show_help, sim_type):
                 ),
                 pn.pane.Markdown(
                     "- `end_date`: End date of the work item in ISO 8601 format"
-                ),
-                pn.pane.Markdown(
-                    "- `tags`: Comma-separated tags for filtering (optional)"
                 ),
             )
             title = DATA_SOURCE_LABEL

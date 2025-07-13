@@ -15,7 +15,6 @@ Você pode executar o dashboard diretamente no navegador sem instalar nada:
 - **Prever Datas de Conclusão**: Calcular quando um número específico de itens será concluído
 - **Planejamento de Capacidade**: Calcular quantos itens podem ser concluídos em um período
 - **Upload de Dados**: Usar seus próprios arquivos CSV ou dados de exemplo
-- **Filtros por Tags**: Filtrar análise por tags de itens de trabalho
 - **Interface Web**: Dashboard com cálculos em tempo real
 - **Percentis**: Visualizar percentis (70%, 80%, 90%, 95%, 98%) para níveis de confiança
 
@@ -133,36 +132,4 @@ Ou veja outras opções na [documentação oficial](https://github.com/casey/jus
   just test
   ```
 - Rodar os testes em modo watch (auto-reload):
-  ```sh
-  just test-watch
   ```
-- Checar qualidade do código:
-  ```sh
-  just lint
-  just format
-  ```
-- Ver todos os comandos disponíveis:
-  ```sh
-  just --list
-  ```
-
-## Contribuindo
-
-Contribuições são bem-vindas! Veja o [Guia de Contribuição](CONTRIBUTING.md) para detalhes sobre como enviar issues, solicitações de recursos e pull requests.
-
-## Código de Conduta`
-
-Este projeto segue um [Código de Conduta](CODE_OF_CONDUCT.md). Ao participar, você deve seguir este código.
-
-## Licença
-
-Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
-## Créditos
-
-- Simulação Monte Carlo adaptada de [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
-- Teoria baseada no [ActionableAgile](https://www.actionableagile.com/) de Daniel Vacanti
-
----
-
-**English**: [README-en.md](README-en.md)

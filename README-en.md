@@ -15,7 +15,6 @@ You can run the dashboard directly in your browser without installing anything:
 - **Forecast Completion Dates**: Calculate when a specific number of items will be completed
 - **Capacity Planning**: Calculate how many items can be completed in a period
 - **Data Upload**: Use your own CSV files or sample data
-- **Tag Filtering**: Filter analysis by work item tags
 - **Web Interface**: Dashboard with real-time calculations
 - **Percentiles**: View percentiles (70%, 80%, 90%, 95%, 98%) for confidence levels
 

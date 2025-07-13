@@ -101,9 +101,6 @@ kwando/
 
 The application expects CSV files with at least a `cycle_time_days` column containing positive numeric values representing the time taken to complete work items.
 
-Optional columns:
-- `tags`: Comma-separated tags for filtering
-
 ## Pull Request Guidelines
 
 - Keep changes focused and atomic
