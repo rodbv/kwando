@@ -53,6 +53,26 @@ file_selector = pn.widgets.Select(
     ),
 )
 
+# Add file upload widget
+file_input = pn.widgets.FileInput(accept=".csv", name="Upload CSV")
+
+
+def handle_file_upload(event):
+    if file_input.value is not None and file_input.filename is not None:
+        filename = str(file_input.filename)
+        value = file_input.value
+        if isinstance(value, bytes):
+            save_path = os.path.join("data", filename)
+            with open(save_path, "wb") as f:
+                f.write(value)
+            # Refresh file selector options
+            csv_files = [f"data/{f}" for f in os.listdir("data") if f.endswith(".csv")]
+            file_selector.options = csv_files
+            file_selector.value = f"data/{filename}"
+
+
+file_input.param.watch(handle_file_upload, "value")
+
 # Remove all comments mentioning tags, tag filtering, or tag checkboxes
 # Remove all references to tags in UI, data cleaning, and info text
 
@@ -493,6 +513,7 @@ def get_main_content(show_help, sim_type):
             content = pn.Column(
                 pn.Row(
                     pn.Column(
+                        file_input,
                         file_selector,
                         pn.layout.Spacer(height=10),
                         sizing_mode="stretch_width",
