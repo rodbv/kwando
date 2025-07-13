@@ -15,6 +15,8 @@ Simulações Monte Carlo usam os dados históricos reais do seu time para gerar 
 
 Para saber mais, veja o livro [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) de Daniel Vacanti.
 
+Assista: [Seu projeto se comporta como um furacão. Faça previsões como um. (YouTube)](https://www.youtube.com/watch?v=j1FTNVRkJYg)
+
 ## Começando
 
 ### Pré-requisitos
