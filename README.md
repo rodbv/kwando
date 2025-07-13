@@ -9,6 +9,12 @@ A dashboard to forecast work item completion using Monte Carlo simulations. Buil
 
 <img src="docs/images/screencap.gif" alt="KWANDO Dashboard Screenshot" style="max-width: 600px; box-shadow: 0 4px 24px #0003; border-radius: 8px; margin: 1em 0;" />
 
+## Why Monte Carlo Simulation?
+
+Monte Carlo simulations use your team’s actual historical data to generate thousands of possible futures, providing a range of likely outcomes and their probabilities. Unlike simple averages or burn rate calculations, Monte Carlo methods account for the natural variability and unpredictability in real work. This means you get forecasts with confidence levels (percentiles), not just a single number, helping you make better decisions under uncertainty.
+
+For a deeper dive, see [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) by Daniel Vacanti.
+
 ## Getting Started
 
 ### Prerequisites

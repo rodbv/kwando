@@ -9,6 +9,12 @@ Dashboard para prever a conclusão de itens de trabalho usando simulações Mont
 
 <img src="docs/images/screencap.gif" alt="KWANDO Dashboard Screenshot" style="max-width: 600px; box-shadow: 0 4px 24px #0003; border-radius: 8px; margin: 1em 0;" />
 
+## Por que Simulação Monte Carlo?
+
+Simulações Monte Carlo usam os dados históricos reais do seu time para gerar milhares de possíveis cenários futuros, mostrando uma faixa de resultados prováveis e suas probabilidades. Diferente de médias simples ou cálculos de throughput, a abordagem Monte Carlo leva em conta a variabilidade natural e a imprevisibilidade do trabalho real. Assim, você obtém previsões com níveis de confiança (percentis), e não apenas um único número, ajudando a tomar decisões melhores diante da incerteza.
+
+Para saber mais, veja o livro [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) de Daniel Vacanti.
+
 ## Começando
 
 ### Pré-requisitos
