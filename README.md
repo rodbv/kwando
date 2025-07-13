@@ -5,6 +5,8 @@
 
 Dashboard para prever a conclusão de itens de trabalho usando simulações Monte Carlo. Feito com Python e [Panel](https://panel.holoviz.org/).
 
+![KWANDO Dashboard](docs/images/chrome-capture-2025-7-13.mp4)
+
 ## Começando
 
 ### Pré-requisitos
