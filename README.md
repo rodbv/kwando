@@ -1,3 +1,4 @@
+[![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
 <a href="https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard" target="_blank">
   <img src="https://mybinder.org/badge_logo.svg" alt="Binder"/>
 </a>
