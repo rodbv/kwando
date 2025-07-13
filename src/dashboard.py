@@ -1,13 +1,14 @@
-import panel as pn
+import argparse
+import os
+from datetime import datetime, timedelta
+
 import pandas as pd
+import panel as pn
 from monte_carlo import (
     forecast_days_for_work_items,
     forecast_work_items_in_period,
     get_next_business_day,
 )
-from datetime import datetime, timedelta
-import argparse
-import os
 from panel.layout import Row
 from panel.widgets import Checkbox
 
@@ -126,7 +127,6 @@ def get_data_stats_md(df):
         median_cycle_time = df["cycle_time_days"].median()
         total_items = len(df)
         total_original = len(original_df)
-        invalid_date = 0  # Not counting this as invalid data anymore
 
         # Format as a Markdown string
         stats_md = f"""
@@ -220,7 +220,7 @@ def handle_file_selection(event):
                     if tags_str.strip():  # Skip empty strings
                         tags = [tag.strip() for tag in tags_str.split(",")]
                         all_tags.update(tags)
-        except:
+        except Exception:
             # Fallback to using the filtered data if loading full data fails
             all_tags = set()
             for tags_str in full_df["tags"].dropna():
@@ -655,6 +655,12 @@ This dashboard uses Monte Carlo simulation to forecast either:
 2. How many work items can be completed in a given time period
 
 The forecasts are based on historical completion data.
+
+---
+
+**Credits:**
+- Monte Carlo simulation implementation adapted from [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
+- Theory and approach inspired by Daniel Vacanti's [ActionableAgile](https://www.actionableagile.com/)
 """,
     styles={"font-size": "14px"},
 )

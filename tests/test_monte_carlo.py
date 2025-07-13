@@ -64,7 +64,7 @@ def test_forecast_days_for_work_items_when_dataframe_has_one_row_should_return_s
     import numpy as np
 
     assert all(
-        isinstance(x, (int, float, np.integer, np.floating))
+        isinstance(x, int | float | np.integer | np.floating)
         for x in result["simulated_durations"]
     )
 

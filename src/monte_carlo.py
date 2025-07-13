@@ -1,8 +1,9 @@
-import pandas as pd
-import numpy as np
 import random
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
+from typing import Any
+
+import numpy as np
+import pandas as pd
 
 PERCENTILES = [70, 80, 90, 95, 98]
 
@@ -20,7 +21,7 @@ def forecast_days_for_work_items(
     df: pd.DataFrame,
     num_work_items: int,
     num_iterations: int = 5000,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Forecast the number of days required to finish the next `num_work_items` work items using Monte Carlo simulation.
 
@@ -87,7 +88,7 @@ def forecast_work_items_in_period(
     start_date: str,
     end_date: str,
     num_iterations: int = 5000,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Forecast how many work items can be finished between start_date and end_date using Monte Carlo simulation.
 
