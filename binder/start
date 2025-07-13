@@ -1,5 +1,2 @@
 #!/bin/bash
-# Alternative start script for manual launch
-echo "Starting KWANDO Dashboard..."
-echo "Access the dashboard at: http://localhost:8888"
 panel serve src/dashboard.py --port 8888 --address 0.0.0.0 --allow-websocket-origin=* --show

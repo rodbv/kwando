@@ -1,3 +1,2 @@
 #!/bin/bash
-# Start the Panel dashboard
-panel serve src/dashboard.py --port 8888 --address 0.0.0.0 --allow-websocket-origin=* --show
+# (Optional) install extra things, but do NOT start the server here
