@@ -1,10 +1,9 @@
 import panel as pn
 
-# Create a simple test app
+# Create a very simple app
 app = pn.Column(
-    pn.pane.Markdown("# KWANDO Test"),
-    pn.pane.Markdown("If you can see this, Panel is working!"),
-    pn.widgets.Button(name="Test Button", button_type="primary"),
+    pn.pane.Markdown("# Hello from KWANDO!"),
+    pn.pane.Markdown("Panel is working in Binder!"),
 )
 
 # Make it servable
