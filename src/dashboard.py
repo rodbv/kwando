@@ -4,13 +4,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import panel as pn
-from monte_carlo import (
-    forecast_days_for_work_items,
-    forecast_work_items_in_period,
-    get_data_statistics,
-    get_next_business_day,
-    load_and_prepare_data,
-)
+from monte_carlo import MonteCarloSimulator
 
 # Initialize Panel with template support
 pn.extension("tabulator", "ace")
@@ -76,7 +70,8 @@ def load_and_clean_data(filename: str) -> pd.DataFrame:
     Load data from a CSV file and convert to a dataframe
     """
     try:
-        return load_and_prepare_data(filename)
+        sim = MonteCarloSimulator(filename)
+        return sim.df
     except (ValueError, pd.errors.ParserError, Exception) as e:
         return pd.DataFrame({"Error": [str(e)]})
 
@@ -89,7 +84,8 @@ def get_data_stats_as_markdown(df):
         return "### Data Statistics\n\nCould not calculate statistics. Please check the data file."
 
     try:
-        stats = get_data_statistics(df)
+        sim = MonteCarloSimulator(df)
+        stats = sim.get_data_statistics()
 
         if stats["error"]:
             return f"### Data Statistics\n\n{stats['error']}"
@@ -226,7 +222,7 @@ num_cards_slider = pn.widgets.IntSlider(
 # Widgets for time period simulation
 period_start_date = pn.widgets.DatePicker(
     name="Period Start Date",
-    value=get_next_business_day(),
+    value=MonteCarloSimulator.get_next_business_day(),
     start=datetime.now().date(),
     width=200,
 )
@@ -241,8 +237,8 @@ period_end_date = pn.widgets.DatePicker(
 
 def update_work_items_results(df, num_cards):
     try:
-        results = forecast_days_for_work_items(
-            df=df,
+        sim = MonteCarloSimulator(df)
+        results = sim.forecast_days_for_work_items(
             num_work_items=num_cards,
             num_iterations=5000,
         )
@@ -284,8 +280,8 @@ def update_work_items_results(df, num_cards):
 
 def update_period_results(df, start_date, end_date):
     try:
-        results = forecast_work_items_in_period(
-            df=df,
+        sim = MonteCarloSimulator(df)
+        results = sim.forecast_work_items_in_period(
             start_date=start_date,
             end_date=end_date,
             num_iterations=5000,
