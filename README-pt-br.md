@@ -88,3 +88,17 @@ Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 - Simulação Monte Carlo adaptada de [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
 - Inspirado no livro [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) de Daniel Vacanti
+
+## Rodar com Docker (sem Python local)
+
+Se você tem Docker instalado, pode construir e rodar o Kwando sem instalar Python ou dependências:
+
+```sh
+# Construa a imagem Docker (no diretório raiz do repositório)
+docker build -t kwando-dashboard .
+
+# Rode o dashboard, expondo em http://localhost:5006
+docker run -p 5006:5006 kwando-dashboard
+```
+
+Depois, acesse [http://localhost:5006](http://localhost:5006) no seu navegador.
