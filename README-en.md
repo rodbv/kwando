@@ -45,22 +45,6 @@ To run locally:
   - Forecast when a set number of items will be done
   - Forecast how many items can be completed in a period
 
-## Development
-
-- Run tests:
-  ```sh
-  just test
-  ```
-- Lint and format code:
-  ```sh
-  just lint
-  just format
-  ```
-- See all available commands:
-  ```sh
-  just --list
-  ```
-
 ## Contributing
 
 Contributions are welcome! See the [Contributing Guide](CONTRIBUTING.md) for details on how to submit issues, feature requests, and pull requests.

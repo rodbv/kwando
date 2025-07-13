@@ -103,16 +103,3 @@ No Linux:
 sudo snap install --edge --classic just
 ```
 Ou veja outras opções na [documentação oficial](https://github.com/casey/just#installation).
-
-#### Exemplos de uso
-
-- Rodar o dashboard:
-  ```sh
-  just run
-  ```
-- Rodar os testes (uma vez):
-  ```sh
-  just test
-  ```
-- Rodar os testes em modo watch (auto-reload):
-  ```
