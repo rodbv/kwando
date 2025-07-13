@@ -1,4 +1,4 @@
-# WWIBD: Monte Carlo Simulation Dashboard
+# KWANDO: Monte Carlo Simulation Dashboard
 
 A simple dashboard for forecasting work item completion using Monte Carlo simulations. Built with Python, Panel, and CSV data.
 
