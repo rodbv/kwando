@@ -2,11 +2,8 @@ import argparse
 import os
 from datetime import datetime, timedelta
 
-import numpy as np
 import pandas as pd
 import panel as pn
-from bokeh.models import Label, Span
-from bokeh.plotting import figure
 from monte_carlo import (
     convert_dates_to_cycle_time,
     forecast_days_for_work_items,
@@ -37,10 +34,6 @@ how_many_button = pn.widgets.Button(
 data_source_button = pn.widgets.Button(
     name=DATA_SOURCE_LABEL, button_type="default", width=200
 )
-
-# File picker widget and default file text
-# Remove file_input and any upload logic
-# Only keep file_selector for choosing CSVs from the data directory
 
 # List all CSV files in the data/ directory
 csv_files = [f"data/{f}" for f in os.listdir("data") if f.endswith(".csv")]
@@ -77,22 +70,9 @@ def handle_file_upload(event):
 file_input.param.watch(handle_file_upload, "value")
 
 
-# Add a reusable data cleaning/filtering function
-def clean_and_filter_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Clean a DataFrame (no tag filtering anymore).
-    """
-    try:
-        cleaned = df.copy()
-        return cleaned
-    except Exception as e:
-        return pd.DataFrame({"Error": [f"Could not clean/filter data: {str(e)}"]})
-
-
 def load_and_clean_data(filename: str) -> pd.DataFrame:
     """
-    Load data from a CSV file and clean it (no tag filtering).
-    Only supports new format (start_date, end_date).
+    Load data from a CSV file and convert to a dataframe
     """
     try:
         df = pd.read_csv(filename)
@@ -104,16 +84,17 @@ def load_and_clean_data(filename: str) -> pd.DataFrame:
                     ]
                 }
             )
-        df = convert_dates_to_cycle_time(df)
-        return clean_and_filter_data(df)
+        return convert_dates_to_cycle_time(df)
     except pd.errors.ParserError as e:
         return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
     except Exception as e:
         return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
 
 
-# Function to calculate and display data statistics
 def get_data_stats_md(df):
+    """
+    Calculate and display data statistics
+    """
     if "Error" in df.columns or df.empty:
         return "### Data Statistics\n\nCould not calculate statistics. Please check the data file."
 
@@ -194,10 +175,10 @@ if not file_selector.value:
     data_stats_pane.object = "### Data Statistics\n\nNo file available."
 
 
-# Function to handle file selection and update preview/stats
-
-
 def handle_file_selection(event):
+    """
+    Handle file selection and update preview/stats
+    """
     if not file_selector.value:
         data_preview_pane.object = pd.DataFrame(
             {"Info": ["No CSV file selected or available in data/ directory."]}
@@ -295,103 +276,7 @@ period_end_date = pn.widgets.DatePicker(
 )
 
 
-# Remove any redundant comments and ensure both simulation result functions are clean
-
-
-def make_histogram_bokeh_plot(simulated_durations, percentiles):
-    if not simulated_durations:
-        return pn.pane.Markdown("No simulation data available for histogram.")
-    hist, edges = np.histogram(simulated_durations, bins=30)
-    p = figure(
-        title="Distribution of Simulated Completion Dates",
-        width=700,
-        height=250,
-        x_axis_label="Days from Start",
-        y_axis_label="Number of Simulations",
-        tools="pan,box_zoom,reset,save",
-    )
-    p.quad(
-        top=hist,
-        bottom=0,
-        left=edges[:-1],
-        right=edges[1:],
-        color="#90cdf4",
-        line_color="#2c5282",
-        alpha=0.7,
-    )
-    for pct_str, color in zip(["80", "90"], ["orange", "red"], strict=False):
-        if pct_str in percentiles:
-            dur = float(percentiles[pct_str])
-            vline = Span(
-                location=dur,
-                dimension="height",
-                line_color=color,
-                line_dash="dashed",
-                line_width=2,
-            )
-            p.add_layout(vline)
-            label = Label(
-                x=dur + 2,
-                y=max(hist) * 0.8,
-                text=f"{pct_str}%",
-                text_color=color,
-                text_font_size="10pt",
-                text_alpha=0.7,
-                background_fill_alpha=0.0,
-            )
-            p.add_layout(label)
-    return pn.pane.Bokeh(p)
-
-
-def make_items_histogram_bokeh_plot(simulated_work_items, percentiles):
-    if not simulated_work_items:
-        return pn.pane.Markdown("No simulation data available for histogram.")
-    hist, edges = np.histogram(
-        simulated_work_items,
-        bins=range(int(min(simulated_work_items)), int(max(simulated_work_items)) + 2),
-    )
-    p = figure(
-        title="Distribution of Simulated Work Items Completed",
-        width=700,
-        height=250,
-        x_axis_label="Number of Work Items Completed",
-        y_axis_label="Number of Simulations",
-        tools="pan,box_zoom,reset,save",
-    )
-    p.quad(
-        top=hist,
-        bottom=0,
-        left=edges[:-1],
-        right=edges[1:],
-        color="#90cdf4",
-        line_color="#2c5282",
-        alpha=0.7,
-    )
-    for pct_str, color in zip(["80", "90"], ["orange", "red"], strict=False):
-        if pct_str in percentiles:
-            items = float(percentiles[pct_str])
-            vline = Span(
-                location=items,
-                dimension="height",
-                line_color=color,
-                line_dash="dashed",
-                line_width=2,
-            )
-            p.add_layout(vline)
-            label = Label(
-                x=items + 0.2,
-                y=max(hist) * 0.8,
-                text=f"{pct_str}%",
-                text_color=color,
-                text_font_size="10pt",
-                text_alpha=0.7,
-                background_fill_alpha=0.0,
-            )
-            p.add_layout(label)
-    return pn.pane.Bokeh(p)
-
-
-def update_work_items_results_with_histogram(df, num_cards):
+def update_work_items_results(df, num_cards):
     try:
         results = forecast_days_for_work_items(
             df=df,
@@ -417,12 +302,7 @@ def update_work_items_results_with_histogram(df, num_cards):
         table_md = df_table.to_markdown(index=False) if not df_table.empty else ""
         if table_md is None:
             table_md = ""
-        hist_chart = make_histogram_bokeh_plot(
-            results["simulated_durations"],
-            results["percentiles"],
-        )
         return pn.Column(
-            hist_chart,
             pn.pane.Markdown(
                 f"""
 ## Monte Carlo Simulation Results - Work Items Forecast
@@ -439,7 +319,7 @@ def update_work_items_results_with_histogram(df, num_cards):
         return pn.Column(pn.pane.Markdown(f"## Error\n\nAn error occurred: {str(e)}"))
 
 
-def update_period_results_with_histogram(df, start_date, end_date):
+def update_period_results(df, start_date, end_date):
     try:
         results = forecast_work_items_in_period(
             df=df,
@@ -456,12 +336,7 @@ def update_period_results_with_histogram(df, start_date, end_date):
         start_ts = pd.Timestamp(results["start_date"])
         end_ts = pd.Timestamp(results["end_date"])
         days_between = (end_ts - start_ts).days
-        hist_chart = make_items_histogram_bokeh_plot(
-            results["simulated_work_items"],
-            results["percentiles"],
-        )
         return pn.Column(
-            hist_chart,
             pn.pane.Markdown(
                 f"""
 ## Monte Carlo Simulation Results - Time Period Forecast
@@ -494,7 +369,7 @@ def get_work_items_results(num_cards, selected_file):
     df = data_preview_pane.object
     if not isinstance(df, pd.DataFrame):
         return pn.Column(pn.pane.Markdown("## Warning\n\nNo valid data loaded."))
-    return update_work_items_results_with_histogram(df, num_cards)
+    return update_work_items_results(df, num_cards)
 
 
 # Replace get_period_results to use the new function
@@ -507,7 +382,7 @@ def get_period_results(start_date, end_date, selected_file):
     df = data_preview_pane.object
     if not isinstance(df, pd.DataFrame):
         return pn.Column(pn.pane.Markdown("## Warning\n\nNo valid data loaded."))
-    return update_period_results_with_histogram(df, start_date, end_date)
+    return update_period_results(df, start_date, end_date)
 
 
 # Create dynamic Panel panes for displaying results
