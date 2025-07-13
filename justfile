@@ -12,10 +12,27 @@ install:
 install-dev:
     uv sync --extra dev
 
-# Run the dashboard (dockerized)
+# Run the dashboard locally (fastest for development)
 run:
+    uv run panel serve src/dashboard.py --autoreload
+
+# Run the dashboard (production dockerized)
+run-docker:
     docker build -t kwando-dashboard .
     docker run --rm -p 5006:5006 --name kwando-dashboard kwando-dashboard
+
+# Run the dashboard (development dockerized)
+run-docker-dev:
+    docker build -f Dockerfile.dev -t kwando-dashboard:dev .
+    docker run --rm -p 5006:5006 --name kwando-dashboard-dev -v $(pwd):/app kwando-dashboard:dev
+
+# Build production image
+build:
+    docker build -t kwando-dashboard .
+
+# Build development image
+build-dev:
+    docker build -f Dockerfile.dev -t kwando-dashboard:dev .
 
 # Run tests (single run, for CI or one-off)
 test:
@@ -59,6 +76,12 @@ clean:
     rm -rf .coverage
     find . -type d -name "__pycache__" -exec rm -rf {} +
     find . -type f -name "*.pyc" -delete
+
+# Clean Docker images and containers
+clean-docker:
+    docker stop kwando-dashboard kwando-dashboard-dev 2>/dev/null || true
+    docker rm kwando-dashboard kwando-dashboard-dev 2>/dev/null || true
+    docker rmi kwando-dashboard kwando-dashboard:dev 2>/dev/null || true
 
 # Show project info
 info:

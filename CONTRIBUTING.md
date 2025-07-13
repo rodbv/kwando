@@ -4,6 +4,7 @@ Thank you for your interest in contributing to KWANDO! This document provides gu
 
 ## Quick Start for Development
 
+### Option 1: Local Development (Recommended - Fastest)
 1. Clone your fork:
    ```sh
    git clone https://github.com/your-username/kwando.git
@@ -20,9 +21,8 @@ Thank you for your interest in contributing to KWANDO! This document provides gu
 4. Run the dashboard:
    ```sh
    just run
-   # or
-   uv run panel serve src/dashboard.py
    ```
+   This starts the dashboard locally with hot reloading - much faster than Docker for development!
 5. Run tests and checks:
    ```sh
    just test
@@ -30,7 +30,30 @@ Thank you for your interest in contributing to KWANDO! This document provides gu
    just format
    ```
 
-See the [Justfile](justfile) for all available development commands.
+### Option 2: Docker Development (For production-like environment)
+1. Clone your fork:
+   ```sh
+   git clone https://github.com/your-username/kwando.git
+   cd kwando
+   ```
+2. Run with Docker development setup:
+   ```sh
+   just run-docker-dev
+   ```
+   This provides:
+   - Production-like environment
+   - Volume mounting for live development
+   - Same security and efficiency as production
+   - Slower startup but identical to production
+
+### Available Commands
+See the [Justfile](justfile) for all available development commands:
+- `just run` - Run dashboard locally with uv (fastest for development)
+- `just run-docker` - Build and run production Docker container
+- `just run-docker-dev` - Build and run development Docker container with hot reloading
+- `just build` - Build production Docker image
+- `just build-dev` - Build development Docker image
+- `just clean-docker` - Clean up Docker containers and images
 
 ## What is KWANDO?
 
@@ -69,8 +92,13 @@ KWANDO is a Monte Carlo simulation dashboard for forecasting work item completio
 
 ### Prerequisites
 
+#### For Local Development
 - Python 3.12 or higher
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
+
+#### For Docker Development
+- Docker installed and running
+- [just](https://just.systems/man/en/) (optional, for convenience commands)
 
 ### Project Structure
 
@@ -81,8 +109,45 @@ kwando/
 │   └── monte_carlo.py    # Monte Carlo simulation logic
 ├── data/                 # Sample CSV data files
 ├── tests/                # Test files
+├── docs/                 # Documentation files
+│   ├── about.md          # About page content
+│   └── monte_carlo_help.md # Help documentation
+├── Dockerfile            # Production multi-stage Docker build
+├── Dockerfile.dev        # Development Docker build with hot reloading
+├── .dockerignore         # Docker build exclusions
 ├── pyproject.toml        # Project configuration
+├── justfile              # Development commands
 └── README.md             # Project documentation
+```
+
+### Docker Development Workflow
+
+The project includes two Docker configurations:
+
+#### Production Dockerfile
+- **Multi-stage build** with Alpine Linux for minimal size
+- **Security hardened** with non-root user
+- **Health checks** for monitoring
+- **Optimized** for production deployment
+
+#### Development Dockerfile
+- **Hot reloading** with volume mounting
+- **Development mode** with debugging capabilities
+- **Same security** practices as production
+- **Fast iteration** for development
+
+#### Key Commands
+```bash
+# Production
+just run          # Build and run production container
+just build        # Build production image only
+
+# Development
+just run-dev      # Build and run dev container with hot reloading
+just build-dev    # Build development image only
+
+# Cleanup
+just clean-docker # Clean all containers and images
 ```
 
 ## Data Format

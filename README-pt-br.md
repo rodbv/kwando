@@ -19,16 +19,20 @@ Assista: [Seu projeto se comporta como um furacão. Faça previsões como um. (Y
 
 ## Primeiros Passos
 
-### Rodar com Docker (sem Python local)
+### Rodar com Docker (Recomendado)
 
-Se você tem Docker instalado, pode construir e rodar o Kwando sem instalar Python ou dependências:
+Se você tem Docker instalado, pode rodar o Kwando sem instalar Python ou dependências:
 
+#### Início Rápido
 ```sh
-# Construa a imagem Docker (no diretório raiz do repositório)
-docker build -t kwando-dashboard .
+# Construir e rodar em um comando
+docker build -t kwando-dashboard . && docker run --rm -p 5006:5006 kwando-dashboard
+```
 
-# Rode o dashboard, expondo em http://localhost:5006
-docker run -p 5006:5006 kwando-dashboard
+#### Alternativa: Usando Just (se você tiver instalado)
+```sh
+# Instalar just: https://just.systems/man/en/
+just run
 ```
 
 Depois, acesse [http://localhost:5006](http://localhost:5006) no seu navegador.
