@@ -73,4 +73,4 @@ Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 ## Créditos
 
 - Simulação Monte Carlo adaptada de [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
-- Teoria baseada em [ActionableAgile](https://www.actionableagile.com/) de Daniel Vacanti
+- Inspirado no livro [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) de Daniel Vacanti

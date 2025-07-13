@@ -554,13 +554,16 @@ This dashboard uses Monte Carlo simulation to forecast either:
 
 The forecasts are based on historical completion data.
 
-[🐙 GitHub](https://github.com/rodbv/kwando)
+<a href="https://github.com/rodbv/kwando" target="_blank" style="display:inline-flex; align-items:center; text-decoration:none;">
+  <img src="https://e7.pngegg.com/pngimages/646/324/png-clipart-github-computer-icons-github-logo-monochrome-thumbnail.png" alt="GitHub" style="height:1.2em; margin-right:0.3em; vertical-align:middle;"/>
+  GitHub
+</a>
 
 ---
 
 **Credits:**
 - Monte Carlo simulation implementation adapted from [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
-- Theory and approach inspired by Daniel Vacanti's [ActionableAgile](https://www.actionableagile.com/)
+- Inspired by the book [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) by Daniel Vacanti
 """,
     styles={"font-size": "14px"},
 )
