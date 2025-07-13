@@ -6,9 +6,9 @@ Dashboard for forecasting work item completion using Monte Carlo simulations. Ma
 
 You can run the dashboard directly in your browser without installing anything:
 
-**[🌐 Run KWANDO Online](https://mybinder.org/v2/gh/YOUR-USERNAME/kwando/main?urlpath=proxy/8888/dashboard)**
+**[🌐 Run KWANDO Online](https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard)**
 
-*Replace `YOUR-USERNAME` with your GitHub username*
+
 
 ## Features
 

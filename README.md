@@ -8,9 +8,7 @@ Dashboard para prever a conclusão de itens de trabalho usando simulações Mont
 
 Você pode executar o dashboard diretamente no navegador sem instalar nada:
 
-**[🌐 Executar KWANDO Online](https://mybinder.org/v2/gh/SEU-USUARIO/kwando/main?urlpath=proxy/8888/dashboard)**
-
-*Substitua `SEU-USUARIO` pelo seu nome de usuário do GitHub*
+**[🌐 Executar KWANDO Online](https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard)**
 
 ## Funcionalidades
 
@@ -41,7 +39,7 @@ A simulação Monte Carlo usa dados históricos de tempo de ciclo para executar 
 
 2. Clone o repositório:
    ```sh
-   git clone https://github.com/seu-usuario/kwando.git
+   git clone https://github.com/rodbv/kwando.git
    cd kwando
    ```
 
