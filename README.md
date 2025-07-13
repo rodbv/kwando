@@ -19,6 +19,20 @@ Watch: [Your Project Behaves Like a Hurricane. Forecast It Like One (YouTube)](h
 
 ## Getting Started
 
+### Run with Docker (no local Python required)
+
+If you have Docker installed, you can build and run Kwando without installing Python or any dependencies:
+
+```sh
+# Build the Docker image (run this in the root of the repo)
+docker build -t kwando-dashboard .
+
+# Run the dashboard, exposing it on http://localhost:5006
+docker run -p 5006:5006 kwando-dashboard
+```
+
+Then open [http://localhost:5006](http://localhost:5006) in your browser.
+
 ### Prerequisites
 
 - Python 3.12 or higher
@@ -88,17 +102,3 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - Monte Carlo simulation adapted from [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
 - Inspired by the book [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) by Daniel Vacanti
-
-## Run with Docker (no local Python required)
-
-If you have Docker installed, you can build and run Kwando without installing Python or any dependencies:
-
-```sh
-# Build the Docker image (run this in the root of the repo)
-docker build -t kwando-dashboard .
-
-# Run the dashboard, exposing it on http://localhost:5006
-docker run -p 5006:5006 kwando-dashboard
-```
-
-Then open [http://localhost:5006](http://localhost:5006) in your browser.
