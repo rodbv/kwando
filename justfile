@@ -14,7 +14,7 @@ install-dev:
 
 # Run the dashboard
 run:
-    uv run panel serve src/dashboard.py
+    uv run panel serve src/dashboard.py --autoreload
 
 # Run tests (single run, for CI or one-off)
 test:
