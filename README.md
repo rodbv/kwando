@@ -1,4 +1,4 @@
-[English version](README-en.md)
+[🇬🇧 English](README.md)
 
 [![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
 ![Coverage](https://img.shields.io/badge/coverage-97%25-green)
@@ -61,3 +61,7 @@ Seu arquivo CSV deve conter pelo menos uma coluna `cycle_time_days` com valores 
    - **"Quantos itens?"**: Calcular quantos itens podem ser concluídos em um período
 3. **Ajustar Parâmetros**: Definir número de itens ou período de datas
 4. **Ver Resultados**: Ver percentis e níveis de confiança da previsão
+
+---
+
+[🇧🇷 Versão em português](README-pt-br.md)
