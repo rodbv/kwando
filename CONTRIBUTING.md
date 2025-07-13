@@ -2,9 +2,39 @@
 
 Thank you for your interest in contributing to KWANDO! This document provides guidelines and information for contributors.
 
+## Quick Start for Development
+
+1. Clone your fork:
+   ```sh
+   git clone https://github.com/your-username/kwando.git
+   cd kwando
+   ```
+2. Install dependencies:
+   ```sh
+   uv sync --extra dev
+   ```
+3. Install pre-commit hooks:
+   ```sh
+   uv run pre-commit install
+   ```
+4. Run the dashboard:
+   ```sh
+   just run
+   # or
+   uv run panel serve src/dashboard.py
+   ```
+5. Run tests and checks:
+   ```sh
+   just test
+   just lint
+   just format
+   ```
+
+See the [Justfile](justfile) for all available development commands.
+
 ## What is KWANDO?
 
-KWANDO is a Monte Carlo simulation dashboard for forecasting work item completion. It helps teams predict when work will be done or how many items can be completed in a given period using historical cycle time data.
+KWANDO is a Monte Carlo simulation dashboard for forecasting work item completion. It helps teams predict when work will be done or how many items can be completed in a given period using historical data.
 
 ## How Can I Contribute?
 
@@ -28,11 +58,12 @@ KWANDO is a Monte Carlo simulation dashboard for forecasting work item completio
 2. **Create a feature branch**: `git checkout -b feature/your-feature-name`
 3. **Make your changes**
 4. **Add tests** for new functionality
-5. **Run the test suite**: `uv run pytest`
-6. **Check code quality**: `uv run ruff check .`
-7. **Format your code**: `uv run ruff format .`
+5. **Run the test suite**: `just test`
+6. **Check code quality**: `just lint`
+7. **Format your code**: `just format`
 8. **Commit your changes** with clear commit messages
 9. **Push to your fork** and submit a pull request
+10. If available, use the pull request template.
 
 ## Development Setup
 
@@ -41,50 +72,7 @@ KWANDO is a Monte Carlo simulation dashboard for forecasting work item completio
 - Python 3.12 or higher
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
 
-### Installation
-
-1. Clone your fork:
-   ```bash
-   git clone https://github.com/your-username/kwando.git
-   cd kwando
-   ```
-
-2. Install dependencies:
-   ```bash
-   uv sync --extra dev
-   ```
-
-3. Install pre-commit hooks:
-   ```bash
-   uv run pre-commit install
-   ```
-
-### Running the Application
-
-```bash
-uv run panel serve src/dashboard.py
-```
-
-### Running Tests
-
-```bash
-uv run pytest
-```
-
-### Code Quality
-
-The project uses:
-- **Ruff** for linting and formatting
-- **Pre-commit** hooks for automated checks
-- **Pytest** for testing
-
-Run quality checks:
-```bash
-uv run ruff check .
-uv run ruff format .
-```
-
-## Project Structure
+### Project Structure
 
 ```
 kwando/
@@ -94,12 +82,22 @@ kwando/
 ├── data/                 # Sample CSV data files
 ├── tests/                # Test files
 ├── pyproject.toml        # Project configuration
-└── README.md            # Project documentation
+└── README.md             # Project documentation
 ```
 
 ## Data Format
 
-The application expects CSV files with at least a `cycle_time_days` column containing positive numeric values representing the time taken to complete work items.
+The application expects CSV files with the following columns:
+- `id`: Unique identifier for each work item
+- `start_date`: Start date of the work item in ISO 8601 format (YYYY-MM-DD)
+- `end_date`: End date of the work item in ISO 8601 format (YYYY-MM-DD)
+
+Example:
+```csv
+id,start_date,end_date
+1,2024-01-01,2024-01-05
+2,2024-01-03,2024-01-10
+```
 
 ## Pull Request Guidelines
 
@@ -109,6 +107,7 @@ The application expects CSV files with at least a `cycle_time_days` column conta
 - Ensure all tests pass
 - Follow the existing code style
 - Add a clear description of your changes
+- Use the pull request template if available
 
 ## Code Style
 
@@ -117,6 +116,10 @@ The application expects CSV files with at least a `cycle_time_days` column conta
 - Write docstrings for functions and classes
 - Keep functions focused and reasonably sized
 - Use meaningful variable and function names
+
+## Code of Conduct
+
+This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ## Questions or Need Help?
 

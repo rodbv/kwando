@@ -1,6 +1,6 @@
 # KWANDO: Monte Carlo Simulation Dashboard
 
-KWANDO is a simple, open-source dashboard for Monte Carlo simulations using your own CSV data. It helps you forecast delivery dates and team capacity using real historical data.
+KWANDO is a simple, open-source dashboard for Monte Carlo simulations using your own CSV data. It helps you forecast delivery dates and team capacity using real historical data. Built with Python and [Panel](https://panel.holoviz.org/).
 
 ## Features
 
@@ -15,23 +15,22 @@ KWANDO is a simple, open-source dashboard for Monte Carlo simulations using your
 
 To run locally:
 
-1. Install Python 3.9+
-2. Clone the repository:
+1. Install Python 3.12+
+2. Install the [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
+3. Clone the repository:
    ```sh
    git clone https://github.com/rodbv/kwando.git
    cd kwando
    ```
-3. Create a virtual environment and install dependencies:
+4. Install dependencies:
    ```sh
-   python -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
+   uv sync
    ```
-4. Start the dashboard:
+5. Start the dashboard:
    ```sh
    just run
    # or
-   panel serve src/dashboard.py --show
+   uv run panel serve src/dashboard.py --show
    ```
 
 ## Usage
@@ -39,8 +38,8 @@ To run locally:
 - Select or add your CSV file in the `data/` directory.
 - The CSV must have at least these columns:
   - `id`: Unique identifier for each work item
-  - `start_date`: Start date of the work item in ISO 8601 format
-  - `end_date`: End date of the work item in ISO 8601 format
+  - `start_date`: Start date of the work item in ISO 8601 format (YYYY-MM-DD)
+  - `end_date`: End date of the work item in ISO 8601 format (YYYY-MM-DD)
 - Use the dashboard to:
   - Forecast when a set number of items will be done
   - Forecast how many items can be completed in a period
