@@ -1,146 +1,74 @@
+<a href="https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard" target="_blank">
+  <img src="https://mybinder.org/badge_logo.svg" alt="Binder"/>
+</a>
+
 # KWANDO: Monte Carlo Simulation Dashboard
 
-Dashboard for forecasting work item completion using Monte Carlo simulations. Made with Python and [Panel](https://panel.holoviz.org/).
-
-## 🚀 Run Online
-
-You can run the dashboard directly in your browser without installing anything:
-
-**[🌐 Run KWANDO Online](https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard)**
-
-
+KWANDO is a simple, open-source dashboard for Monte Carlo simulations using your own CSV data. It helps you forecast delivery dates and team capacity using real historical data.
 
 ## Features
 
-- **Forecast Completion Dates**: Calculate when a specific number of items will be completed
+- **Forecast Completion Dates**: Predict when a set number of work items will be done
 - **Capacity Planning**: Calculate how many items can be completed in a period
 - **Data Upload**: Use your own CSV files or sample data
 - **Web Interface**: Dashboard with real-time calculations
 - **Percentiles**: View percentiles (70%, 80%, 90%, 95%, 98%) for confidence levels
+- **No Vendor Lock-in**: 100% open source, runs locally or online
 
-## What is Monte Carlo Simulation?
+## Quick Start
 
-Monte Carlo simulation uses historical cycle time data to run thousands of simulations. Instead of a single estimate, you get forecasts with different confidence levels, considering the natural variability of completion times.
+You can run the dashboard directly in your browser without installing anything:
 
-## Getting Started
+<a href="https://mybinder.org/v2/gh/rodbv/kwando/main?urlpath=proxy/8888/dashboard" target="_blank">
+  <img src="https://mybinder.org/badge_logo.svg" alt="Binder"/>
+</a>
 
-### Prerequisites
+*Use sample data or upload your own CSV file*
 
-- Python 3.12 or higher
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
+Or run locally:
 
-### Installation
-
-1. Install uv:
-   ```sh
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
+1. Install Python 3.9+
 2. Clone the repository:
    ```sh
-   git clone https://github.com/your-username/kwando.git
+   git clone https://github.com/rodbv/kwando.git
    cd kwando
    ```
-
-3. Install dependencies:
+3. Create a virtual environment and install dependencies:
    ```sh
-   uv sync
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
    ```
-
-4. Run the dashboard:
+4. Start the dashboard:
    ```sh
-   uv run panel serve src/dashboard.py
+   just run
+   # or
+   panel serve src/dashboard.py --show
    ```
-
-5. Open your browser to the URL shown in the terminal (typically `http://localhost:5006`)
-
-## Data Format
-
-Your CSV file should contain at least a `cycle_time_days` column with positive numeric values representing the time taken to complete work items.
-
-**Required columns:**
-- `cycle_time_days`: Number of days to complete each work item
-
-**Optional columns:**
-- `tags`: Comma-separated tags for filtering (e.g., "bug,frontend,high-priority")
 
 ## Usage
 
-1. **Load Data**: Use the "Data Source" section to load your CSV file or choose existing files
-2. **Choose Analysis**:
-   - **"When will it be done?"**: Calculate completion date for a specific number of items
-   - **"How many items?"**: Calculate how many items can be completed in a period
-3. **Set Parameters**: Define number of items or date range
-4. **View Results**: See percentiles and confidence levels of the forecast
+- Select or add your CSV file in the `data/` directory.
+- The CSV must have at least these columns:
+  - `id`: Unique identifier for each work item
+  - `start_date`: Start date of the work item in ISO 8601 format
+  - `end_date`: End date of the work item in ISO 8601 format
+- Use the dashboard to:
+  - Forecast when a set number of items will be done
+  - Forecast how many items can be completed in a period
 
 ## Development
 
-### Setup
-
-1. Install development dependencies:
-   ```sh
-   uv sync --extra dev
-   ```
-
-2. Install pre-commit hooks:
-   ```sh
-   uv run pre-commit install
-   ```
-
-3. Run tests:
-   ```sh
-   uv run pytest
-   ```
-
-### Code Quality
-
-The project uses:
-- **Ruff** for linting and formatting
-- **Pre-commit** hooks for automated checks
-- **Pytest** for testing
-
-Run quality checks:
-```sh
-uv run ruff check .
-uv run ruff format .
-```
-
-### Using just
-
-This project uses [just](https://github.com/casey/just) to simplify common development commands.
-
-#### Installing just
-
-On macOS (Homebrew):
-```sh
-brew install just
-```
-On Linux:
-```sh
-sudo snap install --edge --classic just
-```
-Or see other options in the [official documentation](https://github.com/casey/just#installation).
-
-#### Usage examples
-
-- Run the dashboard:
-  ```sh
-  just run
-  ```
-- Run tests (single run):
+- Run tests:
   ```sh
   just test
   ```
-- Run tests in watch mode (auto-reload):
-  ```sh
-  just test-watch
-  ```
-- Check code quality:
+- Lint and format code:
   ```sh
   just lint
   just format
   ```
-- List all available commands:
+- See all available commands:
   ```sh
   just --list
   ```
@@ -151,7 +79,7 @@ Contributions are welcome! See the [Contributing Guide](CONTRIBUTING.md) for det
 
 ## Code of Conduct
 
-This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you must follow this code.
+This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ## License
 
@@ -160,7 +88,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 ## Credits
 
 - Monte Carlo simulation adapted from [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
-- Theory based on Daniel Vacanti's [ActionableAgile](https://www.actionableagile.com/)
+- Theory based on [ActionableAgile](https://www.actionableagile.com/) by Daniel Vacanti
 
 ---
 
