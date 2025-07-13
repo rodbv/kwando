@@ -1,6 +1,6 @@
 # KWANDO: Monte Carlo Simulation Dashboard
 
-Dashboard for forecasting work item completion using Monte Carlo simulations. Made with Python, Panel, and CSV data.
+Dashboard for forecasting work item completion using Monte Carlo simulations. Made with Python and [Panel](https://panel.holoviz.org/).
 
 ## Features
 
@@ -97,6 +97,46 @@ Run quality checks:
 uv run ruff check .
 uv run ruff format .
 ```
+
+### Using just
+
+This project uses [just](https://github.com/casey/just) to simplify common development commands.
+
+#### Installing just
+
+On macOS (Homebrew):
+```sh
+brew install just
+```
+On Linux:
+```sh
+sudo snap install --edge --classic just
+```
+Or see other options in the [official documentation](https://github.com/casey/just#installation).
+
+#### Usage examples
+
+- Run the dashboard:
+  ```sh
+  just run
+  ```
+- Run tests (single run):
+  ```sh
+  just test
+  ```
+- Run tests in watch mode (auto-reload):
+  ```sh
+  just test-watch
+  ```
+- Check code quality:
+  ```sh
+  just lint
+  just format
+  ```
+- List all available commands:
+  ```sh
+  just --list
+  ```
 
 ## Contributing
 
