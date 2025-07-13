@@ -5,10 +5,11 @@ from datetime import datetime, timedelta
 import pandas as pd
 import panel as pn
 from monte_carlo import (
-    convert_dates_to_cycle_time,
     forecast_days_for_work_items,
     forecast_work_items_in_period,
+    get_data_statistics,
     get_next_business_day,
+    load_and_prepare_data,
 )
 
 # Initialize Panel with template support
@@ -75,20 +76,9 @@ def load_and_clean_data(filename: str) -> pd.DataFrame:
     Load data from a CSV file and convert to a dataframe
     """
     try:
-        df = pd.read_csv(filename)
-        if "start_date" not in df.columns or "end_date" not in df.columns:
-            return pd.DataFrame(
-                {
-                    "Error": [
-                        "CSV must have start_date and end_date columns in ISO 8601 format."
-                    ]
-                }
-            )
-        return convert_dates_to_cycle_time(df)
-    except pd.errors.ParserError as e:
-        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
-    except Exception as e:
-        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
+        return load_and_prepare_data(filename)
+    except (ValueError, pd.errors.ParserError, Exception) as e:
+        return pd.DataFrame({"Error": [str(e)]})
 
 
 def get_data_stats_md(df):
@@ -99,45 +89,18 @@ def get_data_stats_md(df):
         return "### Data Statistics\n\nCould not calculate statistics. Please check the data file."
 
     try:
-        # Load the original unfiltered data to count invalid rows
-        if not file_selector.value:
-            return "### Data Statistics\n\nNo file selected."
+        stats = get_data_statistics(df)
 
-        original_df = pd.read_csv(file_selector.value)
-
-        # Count invalid rows (cycle_time_days <= 0)
-        # Handle both old format (cycle_time_days) and new format (start_date, end_date)
-        if "start_date" in original_df.columns and "end_date" in original_df.columns:
-            # For new format, count rows with invalid dates
-            invalid_dates = (
-                pd.to_datetime(original_df["start_date"], errors="coerce").isna()
-                | pd.to_datetime(original_df["end_date"], errors="coerce").isna()
-            )
-            invalid_cycle_time = invalid_dates.sum()
-        else:
-            invalid_cycle_time = 0
-
-        # Count rows before min_date (2018-01-01) - removed since we're not treating this as invalid data
-
-        # Perform calculations on the filtered data
-        min_cycle_time = df["cycle_time_days"].min()
-        max_cycle_time = df["cycle_time_days"].max()
-        median_cycle_time = df["cycle_time_days"].median()
-        total_items = len(df)
-        total_original = len(original_df)
+        if stats["error"]:
+            return f"### Data Statistics\n\n{stats['error']}"
 
         # Format as a Markdown string
         stats_md = f"""
 ### Data Statistics
-- **Total Work Items:** {total_items}
-- **Min Cycle Time:** `{min_cycle_time}` days
-- **Max Cycle Time:** `{max_cycle_time}` days
-- **Median Cycle Time:** `{median_cycle_time:.1f}` days
-
-### Data Quality
-- **Original Rows:** {total_original}
-- **Invalid Cycle Times (≤0):** {invalid_cycle_time}
-- **Valid Rows Used:** {total_items}
+- **Total Work Items:** {stats['total_items']}
+- **Min Cycle Time:** `{stats['min_cycle_time']}` days
+- **Max Cycle Time:** `{stats['max_cycle_time']}` days
+- **Median Cycle Time:** `{stats['median_cycle_time']:.1f}` days
 """
         return stats_md
     except Exception as e:
