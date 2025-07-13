@@ -5,10 +5,6 @@
 
 Dashboard para prever a conclusão de itens de trabalho usando simulações Monte Carlo. Feito com Python e [Panel](https://panel.holoviz.org/).
 
-<video src="docs/images/chrome-capture-2025-7-13.mp4" controls style="max-width: 600px; box-shadow: 0 4px 24px #0003; border-radius: 8px; margin: 1em 0;">
-  Seu navegador não suporta o elemento de vídeo.
-</video>
-
 ## Começando
 
 ### Pré-requisitos

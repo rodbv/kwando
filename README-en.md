@@ -2,10 +2,6 @@
 
 KWANDO is a simple, open-source dashboard for Monte Carlo simulations using your own CSV data. It helps you forecast delivery dates and team capacity using real historical data.
 
-<video src="docs/images/chrome-capture-2025-7-13.mp4" controls style="max-width: 600px; box-shadow: 0 4px 24px #0003; border-radius: 8px; margin: 1em 0;">
-  Your browser does not support the video tag.
-</video>
-
 ## Features
 
 - **Forecast Completion Dates**: Predict when a set number of work items will be done
