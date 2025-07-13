@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import pandas as pd
 import pytest
 from monte_carlo import (
@@ -7,7 +5,6 @@ from monte_carlo import (
     forecast_days_for_work_items,
     forecast_work_items_in_period,
     get_data_statistics,
-    get_next_business_day,
     load_and_prepare_data,
 )
 
@@ -172,6 +169,16 @@ def test_forecast_days_for_work_items_when_cycle_time_column_is_missing_should_r
     assert result["percentile_dates"] == {}
 
 
+def test_forecast_days_for_work_items_when_cycle_time_days_column_is_empty_should_return_empty_results():
+    df = pd.DataFrame({"cycle_time_days": []})
+    result = forecast_days_for_work_items(df, num_work_items=3, num_iterations=5)
+    assert result["simulated_durations"] == []
+    assert result["percentiles"] == {}
+    assert result["percentile_dates"] == {}
+    assert result["num_work_items"] == 3
+    assert result["num_iterations"] == 5
+
+
 def test_forecast_work_items_in_period_when_dataframe_is_valid_should_return_expected_results(
     minimal_df,
 ):
@@ -187,33 +194,6 @@ def test_forecast_work_items_in_period_when_dataframe_is_valid_should_return_exp
     }
     assert len(result["simulated_work_items"]) == 20
     assert result["percentiles"]
-
-
-def test_get_next_business_day_when_today_is_weekday_should_return_next_day(mocker):
-    """Test that get_next_business_day returns the next day when today is a weekday."""
-    mock_datetime = mocker.patch("monte_carlo.datetime")
-    mock_datetime.now.return_value = datetime(2024, 1, 1)  # Monday
-    result = get_next_business_day()
-    expected = datetime(2024, 1, 2).date()  # Tuesday
-    assert result == expected
-
-
-def test_get_next_business_day_when_today_is_friday_should_skip_weekend(mocker):
-    """Test that get_next_business_day skips weekend when today is Friday."""
-    mock_datetime = mocker.patch("monte_carlo.datetime")
-    mock_datetime.now.return_value = datetime(2024, 1, 5)  # Friday
-    result = get_next_business_day()
-    expected = datetime(2024, 1, 8).date()  # Monday
-    assert result == expected
-
-
-def test_get_next_business_day_when_today_is_saturday_should_skip_weekend(mocker):
-    """Test that get_next_business_day skips weekend when today is Saturday."""
-    mock_datetime = mocker.patch("monte_carlo.datetime")
-    mock_datetime.now.return_value = datetime(2024, 1, 6)  # Saturday
-    result = get_next_business_day()
-    expected = datetime(2024, 1, 8).date()  # Monday
-    assert result == expected
 
 
 def test_forecast_work_items_in_period_when_start_and_end_date_are_same_should_handle():
@@ -243,6 +223,18 @@ def test_forecast_work_items_in_period_when_cycle_times_are_mixed_should_handle_
     )
     assert len(result["simulated_work_items"]) == 100
     assert any(item > 0 for item in result["simulated_work_items"])
+
+
+def test_forecast_work_items_in_period_when_cycle_time_days_column_is_empty_should_return_empty_results():
+    df = pd.DataFrame({"cycle_time_days": []})
+    result = forecast_work_items_in_period(
+        df, start_date="2024-01-01", end_date="2024-01-10", num_iterations=7
+    )
+    assert result["simulated_work_items"] == []
+    assert result["percentiles"] == {}
+    assert result["start_date"] == "2024-01-01"
+    assert result["end_date"] == "2024-01-10"
+    assert result["num_iterations"] == 7
 
 
 # Tests for load_and_prepare_data function

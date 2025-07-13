@@ -83,6 +83,8 @@ clean-docker:
     docker rm kwando-dashboard kwando-dashboard-dev 2>/dev/null || true
     docker rmi kwando-dashboard kwando-dashboard:dev 2>/dev/null || true
 
+
+
 # Show project info
 info:
     @echo "KWANDO - Monte Carlo Simulation Dashboard"

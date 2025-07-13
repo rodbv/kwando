@@ -173,4 +173,6 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 .DS_Store
+
+# Private scripts (not for public distribution)
 scripts/docker-publish.sh
