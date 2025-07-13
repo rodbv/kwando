@@ -73,16 +73,6 @@ def handle_file_upload(event):
 
 file_input.param.watch(handle_file_upload, "value")
 
-# Remove all comments mentioning tags, tag filtering, or tag checkboxes
-# Remove all references to tags in UI, data cleaning, and info text
-
-# Global state for data source
-current_data_file = "data/data.csv"
-
-
-def get_current_data_file():
-    return file_selector.value
-
 
 # Add a reusable data cleaning/filtering function
 def clean_and_filter_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -199,7 +189,6 @@ if not file_selector.value:
         {"Info": ["No CSV file found in data/ directory."]}
     )
     data_stats_pane.object = "### Data Statistics\n\nNo file available."
-    # default_file_text.object = "**No data file available.**" # This line is removed
 
 
 # Function to handle file selection and update preview/stats
@@ -211,7 +200,6 @@ def handle_file_selection(event):
             {"Info": ["No CSV file selected or available in data/ directory."]}
         )
         data_stats_pane.object = "### Data Statistics\n\nNo file selected."
-        # default_file_text.object = "**No data file selected.**" # This line is removed
         return
 
     # Load data without tag filtering
@@ -220,15 +208,9 @@ def handle_file_selection(event):
         full_df.head(100) if "Error" not in full_df.columns else full_df
     )
     data_stats_pane.object = get_data_stats_md(full_df)
-    # default_file_text.object = f"**Current data:** {file_selector.value}" # This line is removed
 
 
 file_selector.param.watch(handle_file_selection, "value")
-
-
-# Remove all comments mentioning tags, tag filtering, or tag checkboxes
-# Remove get_data_source_info selected_tags logic
-# Remove handle_tag_selection and make_checkbox_reactive
 
 
 # Create a parameter to track which simulation is active
@@ -311,11 +293,11 @@ period_end_date = pn.widgets.DatePicker(
 
 
 # Function to update results based on work items simulation
-def update_work_items_results(num_cards):
+def update_work_items_results(df, num_cards):
     try:
         # DataFrame is already filtered by tags in data_preview_pane.object
         results = forecast_days_for_work_items(
-            df=data_preview_pane.object,
+            df=df,
             num_work_items=num_cards,
             num_iterations=5000,
         )
@@ -349,11 +331,11 @@ def update_work_items_results(num_cards):
 
 
 # Function to update results based on time period simulation
-def update_period_results(start_date, end_date):
+def update_period_results(df, start_date, end_date):
     try:
         # DataFrame is already filtered by tags in data_preview_pane.object
         results = forecast_work_items_in_period(
-            df=data_preview_pane.object,
+            df=df,
             start_date=start_date,
             end_date=end_date,
             num_iterations=5000,
@@ -394,9 +376,10 @@ def update_period_results(start_date, end_date):
     file_selector.param.value,
 )
 def get_work_items_results(num_cards, selected_file):
-    global current_data_file
-    current_data_file = selected_file
-    return update_work_items_results(num_cards)
+    df = data_preview_pane.object
+    if not isinstance(df, pd.DataFrame):
+        return "## Warning\n\nNo valid data loaded."
+    return update_work_items_results(df, num_cards)
 
 
 @pn.depends(
@@ -405,9 +388,10 @@ def get_work_items_results(num_cards, selected_file):
     file_selector.param.value,
 )
 def get_period_results(start_date, end_date, selected_file):
-    global current_data_file
-    current_data_file = selected_file
-    return update_period_results(start_date, end_date)
+    df = data_preview_pane.object
+    if not isinstance(df, pd.DataFrame):
+        return "## Warning\n\nNo valid data loaded."
+    return update_period_results(df, start_date, end_date)
 
 
 # Create dynamic Panel panes for displaying results
@@ -533,7 +517,7 @@ def get_main_content(show_help, sim_type):
                 pn.pane.Markdown("**CSV file must have the following columns:**"),
                 pn.pane.Markdown("- `id`: Unique identifier for each work item"),
                 pn.pane.Markdown(
-                    "- `start_date`: Start date of the work item in ISO 8601 format"
+                    "- `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD"
                 ),
                 pn.pane.Markdown(
                     "- `end_date`: End date of the work item in ISO 8601 format"
@@ -569,6 +553,8 @@ This dashboard uses Monte Carlo simulation to forecast either:
 2. How many work items can be completed in a given time period
 
 The forecasts are based on historical completion data.
+
+[🐙 GitHub](https://github.com/rodbv/kwando)
 
 ---
 

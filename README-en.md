@@ -38,7 +38,7 @@ To run locally:
 - Select or add your CSV file in the `data/` directory.
 - The CSV must have at least these columns:
   - `id`: Unique identifier for each work item
-  - `start_date`: Start date of the work item in ISO 8601 format (YYYY-MM-DD)
+  - `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD (YYYY-MM-DD)
   - `end_date`: End date of the work item in ISO 8601 format (YYYY-MM-DD)
 - Use the dashboard to:
   - Forecast when a set number of items will be done
@@ -64,3 +64,5 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 ---
 
 **Português**: [README.md](README.md)
+
+[Versão em português](README.md)

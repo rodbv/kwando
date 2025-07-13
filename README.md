@@ -1,3 +1,5 @@
+[English version](README-en.md)
+
 [![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
 ![Coverage](https://img.shields.io/badge/coverage-97%25-green)
 

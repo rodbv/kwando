@@ -89,7 +89,7 @@ kwando/
 
 The application expects CSV files with the following columns:
 - `id`: Unique identifier for each work item
-- `start_date`: Start date of the work item in ISO 8601 format (YYYY-MM-DD)
+- `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD (YYYY-MM-DD)
 - `end_date`: End date of the work item in ISO 8601 format (YYYY-MM-DD)
 
 Example:
