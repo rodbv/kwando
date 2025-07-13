@@ -3,74 +3,74 @@
 [![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
 ![Coverage](https://img.shields.io/badge/coverage-97%25-green)
 
-# KWANDO: Monte Carlo Simulation Dashboard
+# KWANDO: Dashboard de Simulação Monte Carlo
 
-A dashboard to forecast work item completion using Monte Carlo simulations. Built with Python and [Panel](https://panel.holoviz.org/).
+Dashboard para prever a conclusão de itens de trabalho usando simulações Monte Carlo. Feito com Python e [Panel](https://panel.holoviz.org/).
 
 <img src="docs/images/screencap.gif" alt="KWANDO Dashboard Screenshot" style="max-width: 600px; box-shadow: 0 4px 24px #0003; border-radius: 8px; margin: 1em 0;" />
 
-## Getting Started
+## Começando
 
-### Prerequisites
+### Pré-requisitos
 
-- Python 3.12 or higher
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
+- Python 3.12 ou superior
+- Gerenciador de pacotes [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-### Installation
+### Instalação
 
-1. Install uv:
+1. Instale o uv:
    ```sh
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
-2. Clone the repository:
+2. Clone o repositório:
    ```sh
    git clone https://github.com/rodbv/kwando.git
    cd kwando
    ```
-3. Install dependencies:
+3. Instale as dependências:
    ```sh
    uv sync
    ```
-4. Run the dashboard:
+4. Execute o dashboard:
    ```sh
    uv run panel serve src/dashboard.py
    ```
-5. Open your browser at the URL shown in the terminal (typically `http://localhost:5006`)
+5. Abra seu navegador no URL mostrado no terminal (tipicamente `http://localhost:5006`)
 
-## Data Format
+## Formato dos Dados
 
-Your CSV file must have at least one column `cycle_time_days` with positive numeric values representing the time to complete each work item.
+Seu arquivo CSV deve conter pelo menos uma coluna `cycle_time_days` com valores numéricos positivos representando o tempo necessário para concluir itens de trabalho.
 
-**Required columns:**
-- `cycle_time_days`: Number of days to complete each work item
+**Colunas obrigatórias:**
+- `cycle_time_days`: Número de dias para concluir cada item de trabalho
 
-**Optional columns:**
-- `tags`: Comma-separated tags for filtering (e.g., "bug,frontend,high-priority")
+**Colunas opcionais:**
+- `tags`: Tags separadas por vírgula para filtragem (ex: "bug,frontend,alta-prioridade")
 
-## How to Use
+## Como Usar
 
-1. **Load Data**: Use the "Data Source" section to upload your CSV file or choose an existing file
-2. **Choose Analysis**:
-   - **"When will it be done?"**: Calculate completion date for a specific number of items
-   - **"How many items?"**: Calculate how many items can be completed in a period
-3. **Adjust Parameters**: Set the number of items or date range
-4. **View Results**: See percentiles and confidence levels for your forecast
+1. **Carregar Dados**: Use a seção "Fonte de Dados" para carregar seu arquivo CSV ou escolher arquivos existentes
+2. **Escolher Análise**:
+   - **"Quando será concluído?"**: Calcular data de conclusão para um número específico de itens
+   - **"Quantos itens?"**: Calcular quantos itens podem ser concluídos em um período
+3. **Ajustar Parâmetros**: Definir número de itens ou período de datas
+4. **Ver Resultados**: Ver percentis e níveis de confiança da previsão
 
 ---
 
-## Contributing
+## Contribuindo
 
-Contributions are welcome! See the [Contributing Guide](CONTRIBUTING.md) for details on how to submit issues, feature requests, and pull requests.
+Contribuições são bem-vindas! Veja o [Guia de Contribuição](CONTRIBUTING.md) para detalhes sobre como enviar issues, sugestões e pull requests.
 
-## Code of Conduct
+## Código de Conduta
 
-This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+Este projeto segue um [Código de Conduta](CODE_OF_CONDUCT.md). Ao participar, espera-se que você siga este código.
 
-## License
+## Licença
 
-MIT License - see the [LICENSE](LICENSE) file for details.
+Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-## Credits
+## Créditos
 
-- Monte Carlo simulation adapted from [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
-- Theory based on [ActionableAgile](https://www.actionableagile.com/) by Daniel Vacanti
+- Simulação Monte Carlo adaptada de [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
+- Teoria baseada em [ActionableAgile](https://www.actionableagile.com/) de Daniel Vacanti
