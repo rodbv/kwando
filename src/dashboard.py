@@ -2,16 +2,14 @@ import argparse
 import os
 from datetime import datetime, timedelta
 
-import numpy as np
 import pandas as pd
 import panel as pn
-from bokeh.models import Label, Span
-from bokeh.plotting import figure
 from monte_carlo import (
-    convert_dates_to_cycle_time,
     forecast_days_for_work_items,
     forecast_work_items_in_period,
+    get_data_statistics,
     get_next_business_day,
+    load_and_prepare_data,
 )
 
 # Initialize Panel with template support
@@ -37,10 +35,6 @@ how_many_button = pn.widgets.Button(
 data_source_button = pn.widgets.Button(
     name=DATA_SOURCE_LABEL, button_type="default", width=200
 )
-
-# File picker widget and default file text
-# Remove file_input and any upload logic
-# Only keep file_selector for choosing CSVs from the data directory
 
 # List all CSV files in the data/ directory
 csv_files = [f"data/{f}" for f in os.listdir("data") if f.endswith(".csv")]
@@ -77,86 +71,36 @@ def handle_file_upload(event):
 file_input.param.watch(handle_file_upload, "value")
 
 
-# Add a reusable data cleaning/filtering function
-def clean_and_filter_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Clean a DataFrame (no tag filtering anymore).
-    """
-    try:
-        cleaned = df.copy()
-        return cleaned
-    except Exception as e:
-        return pd.DataFrame({"Error": [f"Could not clean/filter data: {str(e)}"]})
-
-
 def load_and_clean_data(filename: str) -> pd.DataFrame:
     """
-    Load data from a CSV file and clean it (no tag filtering).
-    Only supports new format (start_date, end_date).
+    Load data from a CSV file and convert to a dataframe
     """
     try:
-        df = pd.read_csv(filename)
-        if "start_date" not in df.columns or "end_date" not in df.columns:
-            return pd.DataFrame(
-                {
-                    "Error": [
-                        "CSV must have start_date and end_date columns in ISO 8601 format."
-                    ]
-                }
-            )
-        df = convert_dates_to_cycle_time(df)
-        return clean_and_filter_data(df)
-    except pd.errors.ParserError as e:
-        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
-    except Exception as e:
-        return pd.DataFrame({"Error": [f"Could not load data: {str(e)}"]})
+        return load_and_prepare_data(filename)
+    except (ValueError, pd.errors.ParserError, Exception) as e:
+        return pd.DataFrame({"Error": [str(e)]})
 
 
-# Function to calculate and display data statistics
-def get_data_stats_md(df):
+def get_data_stats_as_markdown(df):
+    """
+    Calculate and display data statistics
+    """
     if "Error" in df.columns or df.empty:
         return "### Data Statistics\n\nCould not calculate statistics. Please check the data file."
 
     try:
-        # Load the original unfiltered data to count invalid rows
-        if not file_selector.value:
-            return "### Data Statistics\n\nNo file selected."
+        stats = get_data_statistics(df)
 
-        original_df = pd.read_csv(file_selector.value)
-
-        # Count invalid rows (cycle_time_days <= 0)
-        # Handle both old format (cycle_time_days) and new format (start_date, end_date)
-        if "start_date" in original_df.columns and "end_date" in original_df.columns:
-            # For new format, count rows with invalid dates
-            invalid_dates = (
-                pd.to_datetime(original_df["start_date"], errors="coerce").isna()
-                | pd.to_datetime(original_df["end_date"], errors="coerce").isna()
-            )
-            invalid_cycle_time = invalid_dates.sum()
-        else:
-            invalid_cycle_time = 0
-
-        # Count rows before min_date (2018-01-01) - removed since we're not treating this as invalid data
-
-        # Perform calculations on the filtered data
-        min_cycle_time = df["cycle_time_days"].min()
-        max_cycle_time = df["cycle_time_days"].max()
-        median_cycle_time = df["cycle_time_days"].median()
-        total_items = len(df)
-        total_original = len(original_df)
+        if stats["error"]:
+            return f"### Data Statistics\n\n{stats['error']}"
 
         # Format as a Markdown string
         stats_md = f"""
 ### Data Statistics
-- **Total Work Items:** {total_items}
-- **Min Cycle Time:** `{min_cycle_time}` days
-- **Max Cycle Time:** `{max_cycle_time}` days
-- **Median Cycle Time:** `{median_cycle_time:.1f}` days
-
-### Data Quality
-- **Original Rows:** {total_original}
-- **Invalid Cycle Times (≤0):** {invalid_cycle_time}
-- **Valid Rows Used:** {total_items}
+- **Total Work Items:** {stats['total_items']}
+- **Min Cycle Time:** `{stats['min_cycle_time']}` days
+- **Max Cycle Time:** `{stats['max_cycle_time']}` days
+- **Median Cycle Time:** `{stats['median_cycle_time']:.1f}` days
 """
         return stats_md
     except Exception as e:
@@ -179,7 +123,7 @@ data_preview_pane = pn.pane.DataFrame(
 )
 data_stats_pane = pn.pane.Markdown(
     (
-        get_data_stats_md(initial_data)
+        get_data_stats_as_markdown(initial_data)
         if file_selector.value
         else "### Data Statistics\n\nNo file available."
     ),
@@ -194,10 +138,10 @@ if not file_selector.value:
     data_stats_pane.object = "### Data Statistics\n\nNo file available."
 
 
-# Function to handle file selection and update preview/stats
-
-
 def handle_file_selection(event):
+    """
+    Handle file selection and update preview/stats
+    """
     if not file_selector.value:
         data_preview_pane.object = pd.DataFrame(
             {"Info": ["No CSV file selected or available in data/ directory."]}
@@ -210,7 +154,7 @@ def handle_file_selection(event):
     data_preview_pane.object = (
         full_df.head(100) if "Error" not in full_df.columns else full_df
     )
-    data_stats_pane.object = get_data_stats_md(full_df)
+    data_stats_pane.object = get_data_stats_as_markdown(full_df)
 
 
 file_selector.param.watch(handle_file_selection, "value")
@@ -295,103 +239,7 @@ period_end_date = pn.widgets.DatePicker(
 )
 
 
-# Remove any redundant comments and ensure both simulation result functions are clean
-
-
-def make_histogram_bokeh_plot(simulated_durations, percentiles):
-    if not simulated_durations:
-        return pn.pane.Markdown("No simulation data available for histogram.")
-    hist, edges = np.histogram(simulated_durations, bins=30)
-    p = figure(
-        title="Distribution of Simulated Completion Dates",
-        width=700,
-        height=250,
-        x_axis_label="Days from Start",
-        y_axis_label="Number of Simulations",
-        tools="pan,box_zoom,reset,save",
-    )
-    p.quad(
-        top=hist,
-        bottom=0,
-        left=edges[:-1],
-        right=edges[1:],
-        color="#90cdf4",
-        line_color="#2c5282",
-        alpha=0.7,
-    )
-    for pct_str, color in zip(["80", "90"], ["orange", "red"], strict=False):
-        if pct_str in percentiles:
-            dur = float(percentiles[pct_str])
-            vline = Span(
-                location=dur,
-                dimension="height",
-                line_color=color,
-                line_dash="dashed",
-                line_width=2,
-            )
-            p.add_layout(vline)
-            label = Label(
-                x=dur + 2,
-                y=max(hist) * 0.8,
-                text=f"{pct_str}%",
-                text_color=color,
-                text_font_size="10pt",
-                text_alpha=0.7,
-                background_fill_alpha=0.0,
-            )
-            p.add_layout(label)
-    return pn.pane.Bokeh(p)
-
-
-def make_items_histogram_bokeh_plot(simulated_work_items, percentiles):
-    if not simulated_work_items:
-        return pn.pane.Markdown("No simulation data available for histogram.")
-    hist, edges = np.histogram(
-        simulated_work_items,
-        bins=range(int(min(simulated_work_items)), int(max(simulated_work_items)) + 2),
-    )
-    p = figure(
-        title="Distribution of Simulated Work Items Completed",
-        width=700,
-        height=250,
-        x_axis_label="Number of Work Items Completed",
-        y_axis_label="Number of Simulations",
-        tools="pan,box_zoom,reset,save",
-    )
-    p.quad(
-        top=hist,
-        bottom=0,
-        left=edges[:-1],
-        right=edges[1:],
-        color="#90cdf4",
-        line_color="#2c5282",
-        alpha=0.7,
-    )
-    for pct_str, color in zip(["80", "90"], ["orange", "red"], strict=False):
-        if pct_str in percentiles:
-            items = float(percentiles[pct_str])
-            vline = Span(
-                location=items,
-                dimension="height",
-                line_color=color,
-                line_dash="dashed",
-                line_width=2,
-            )
-            p.add_layout(vline)
-            label = Label(
-                x=items + 0.2,
-                y=max(hist) * 0.8,
-                text=f"{pct_str}%",
-                text_color=color,
-                text_font_size="10pt",
-                text_alpha=0.7,
-                background_fill_alpha=0.0,
-            )
-            p.add_layout(label)
-    return pn.pane.Bokeh(p)
-
-
-def update_work_items_results_with_histogram(df, num_cards):
+def update_work_items_results(df, num_cards):
     try:
         results = forecast_days_for_work_items(
             df=df,
@@ -417,12 +265,7 @@ def update_work_items_results_with_histogram(df, num_cards):
         table_md = df_table.to_markdown(index=False) if not df_table.empty else ""
         if table_md is None:
             table_md = ""
-        hist_chart = make_histogram_bokeh_plot(
-            results["simulated_durations"],
-            results["percentiles"],
-        )
         return pn.Column(
-            hist_chart,
             pn.pane.Markdown(
                 f"""
 ## Monte Carlo Simulation Results - Work Items Forecast
@@ -439,7 +282,7 @@ def update_work_items_results_with_histogram(df, num_cards):
         return pn.Column(pn.pane.Markdown(f"## Error\n\nAn error occurred: {str(e)}"))
 
 
-def update_period_results_with_histogram(df, start_date, end_date):
+def update_period_results(df, start_date, end_date):
     try:
         results = forecast_work_items_in_period(
             df=df,
@@ -456,12 +299,7 @@ def update_period_results_with_histogram(df, start_date, end_date):
         start_ts = pd.Timestamp(results["start_date"])
         end_ts = pd.Timestamp(results["end_date"])
         days_between = (end_ts - start_ts).days
-        hist_chart = make_items_histogram_bokeh_plot(
-            results["simulated_work_items"],
-            results["percentiles"],
-        )
         return pn.Column(
-            hist_chart,
             pn.pane.Markdown(
                 f"""
 ## Monte Carlo Simulation Results - Time Period Forecast
@@ -494,7 +332,7 @@ def get_work_items_results(num_cards, selected_file):
     df = data_preview_pane.object
     if not isinstance(df, pd.DataFrame):
         return pn.Column(pn.pane.Markdown("## Warning\n\nNo valid data loaded."))
-    return update_work_items_results_with_histogram(df, num_cards)
+    return update_work_items_results(df, num_cards)
 
 
 # Replace get_period_results to use the new function
@@ -507,7 +345,7 @@ def get_period_results(start_date, end_date, selected_file):
     df = data_preview_pane.object
     if not isinstance(df, pd.DataFrame):
         return pn.Column(pn.pane.Markdown("## Warning\n\nNo valid data loaded."))
-    return update_period_results_with_histogram(df, start_date, end_date)
+    return update_period_results(df, start_date, end_date)
 
 
 # Create dynamic Panel panes for displaying results
@@ -522,59 +360,116 @@ def get_data_source_info():
     return pn.pane.Markdown(f"**Data Source:** {file_selector.value}")
 
 
-# Create help text with Monte Carlo explanation
-help_text = pn.pane.Markdown(
-    """
-## How These Forecasts Work
+# Load help text from markdown file
+def load_help_text():
+    """Load help text from markdown file."""
+    try:
+        help_file_path = "docs/monte_carlo_help.md"
+        with open(help_file_path, encoding="utf-8") as f:
+            help_content = f.read()
+        return pn.pane.Markdown(help_content)
+    except FileNotFoundError:
+        # Fallback to basic help text if file not found
+        return pn.pane.Markdown(
+            "## Help\n\nHelp documentation not found. Please check the docs/monte_carlo_help.md file."
+        )
+    except Exception as e:
+        # Fallback to basic help text if any error
+        return pn.pane.Markdown(
+            f"## Help\n\nError loading help documentation: {str(e)}"
+        )
 
-### What is Monte Carlo Simulation?
-Monte Carlo simulation is a mathematical technique that helps us make predictions in uncertain environments. In software delivery, we use it to forecast delivery dates or team capacity by:
-1. Looking at our historical completion data (how long items actually took)
-2. Running thousands of "simulations" using random samples from this history
-3. Analyzing the results to provide confidence levels
 
-### What Data Are We Using?
-- We analyze your team's actual cycle times (how long items took from start to finish)
-- Each work item's cycle time captures the full "system time" including delays, dependencies, and rework
-- We use this real data rather than estimates because it includes all the natural variation in your delivery system
+help_text = load_help_text()
 
-### How to Read the Results
-- The forecasts show different confidence levels (70% to 98%)
-- An "80% confidence" means that, based on your historical performance, you have an 80% chance of hitting that target
-- Higher confidence levels (90%, 95%) give you more certainty but predict longer durations
-- Lower confidence levels (70%, 80%) are more aggressive but carry more risk
 
-### Key Concepts
-1. **Using History vs Estimates**: Rather than relying on up-front estimates, we use your actual delivery history. This captures your team's real-world performance including all the normal delays and uncertainties.
+def load_about_text():
+    """Load about text from markdown file."""
+    try:
+        about_file_path = "docs/about.md"
+        with open(about_file_path, encoding="utf-8") as f:
+            about_content = f.read()
+        return pn.pane.Markdown(about_content, styles={"font-size": "14px"})
+    except FileNotFoundError:
+        # Fallback to basic about text if file not found
+        return pn.pane.Markdown(
+            "## About\n\nAbout information not found. Please check the docs/about.md file.",
+            styles={"font-size": "14px"},
+        )
+    except Exception as e:
+        # Fallback to basic about text if any error
+        return pn.pane.Markdown(
+            f"## About\n\nError loading about information: {str(e)}",
+            styles={"font-size": "14px"},
+        )
 
-2. **Probabilistic vs Deterministic**: Instead of a single date, we provide a range of possibilities with confidence levels. This better reflects the inherent uncertainty in knowledge work.
 
-3. **System Thinking**: The cycle times reflect your entire delivery system - not just coding time but also reviews, testing, deployments, and any delays. This gives you a more realistic picture of delivery times.
+def _create_work_items_content():
+    """Create content for work items simulation."""
+    return pn.Column(
+        pn.Row(
+            pn.Column(
+                get_data_source_info(),
+                num_cards_slider,
+                sizing_mode="stretch_width",
+            ),
+        ),
+        work_items_results,
+    )
 
-### When to Use Each Simulation
-- **"When will it be done?"** - Use when you have a specific number of work items and need to forecast completion dates
-- **"How many items?"** - Use when you have a time period and need to forecast how many items you can complete
 
-### Making Better Decisions
-- Use higher confidence levels (90%+) for important commitments or dependencies
-- Use lower confidence levels (70-80%) for internal planning or less critical items
-- Look for ways to reduce your cycle times to improve all forecasts
-- Remember: the goal is to make informed decisions, not to get exact predictions
+def _create_period_content():
+    """Create content for time period simulation."""
+    return pn.Column(
+        pn.Row(
+            pn.Column(
+                get_data_source_info(),
+                period_start_date,
+                period_end_date,
+                sizing_mode="stretch_width",
+            ),
+        ),
+        period_results,
+    )
 
-### Learn More
 
-**Books by Daniel Vacanti:**
-- <a href="https://actionableagile.com/books/aamfp" target="_blank">Actionable Agile Metrics for Predictability</a> - The definitive guide to flow metrics and analytics
-- <a href="https://leanpub.com/whenwillitbedone" target="_blank">When Will It Be Done?</a> - Lean-Agile Forecasting to Answer Your Customers' Most Important Question
-- <a href="https://actionableagile.com/books/aamfp-vol2" target="_blank">Actionable Agile Metrics Volume II</a> - Advanced Topics in Predictability
+def _create_data_source_content():
+    """Create content for data source page."""
+    return pn.Column(
+        pn.Row(
+            pn.Column(
+                file_input,
+                file_selector,
+                pn.layout.Spacer(height=10),
+                sizing_mode="stretch_width",
+            ),
+        ),
+        pn.layout.Spacer(height=20),
+        pn.Row(
+            pn.Column(
+                pn.pane.Markdown("### Data Preview (First 100 rows)"),
+                data_preview_pane,
+                sizing_mode="stretch_width",
+            ),
+            data_stats_pane,
+            sizing_mode="stretch_width",
+        ),
+        pn.layout.Spacer(height=30),
+        pn.pane.Markdown("**CSV file must have the following columns:**"),
+        pn.pane.Markdown("- `id`: Unique identifier for each work item"),
+        pn.pane.Markdown(
+            "- `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD"
+        ),
+        pn.pane.Markdown("- `end_date`: End date of the work item in ISO 8601 format"),
+    )
 
-**Additional Resources:**
-- <a href="https://prokanban.org/" target="_blank">ProKanban.org</a> - Community for learning about Kanban and flow metrics
-- <a href="https://www.youtube.com/watch?v=j1FTNVRkJYg" target="_blank">Why Monte Carlo Simulation?</a> - Video explanation by Daniel Vacanti
 
-*Based on concepts from ActionableAgile™ and "Actionable Agile Metrics for Predictability" by Daniel Vacanti.*
-"""
-)
+# Content mapping for different simulation types
+CONTENT_MAPPING = {
+    WHEN_LABEL: (_create_work_items_content, WHEN_LABEL),
+    HOW_MANY_LABEL: (_create_period_content, HOW_MANY_LABEL),
+    DATA_SOURCE_LABEL: (_create_data_source_content, DATA_SOURCE_LABEL),
+}
 
 
 # Create a dynamic panel with smooth transitions
@@ -584,62 +479,11 @@ def get_main_content(show_help, sim_type):
         content = help_text
         title = "About Monte Carlo Simulation"
     else:
-        if sim_type == WHEN_LABEL:
-            content = pn.Column(
-                pn.Row(
-                    pn.Column(
-                        get_data_source_info(),
-                        num_cards_slider,
-                        sizing_mode="stretch_width",
-                    ),
-                ),
-                work_items_results,
-            )
-            title = WHEN_LABEL
-        elif sim_type == HOW_MANY_LABEL:
-            content = pn.Column(
-                pn.Row(
-                    pn.Column(
-                        get_data_source_info(),
-                        period_start_date,
-                        period_end_date,
-                        sizing_mode="stretch_width",
-                    ),
-                ),
-                period_results,
-            )
-            title = HOW_MANY_LABEL
-        else:  # Data Source
-            content = pn.Column(
-                pn.Row(
-                    pn.Column(
-                        file_input,
-                        file_selector,
-                        pn.layout.Spacer(height=10),
-                        sizing_mode="stretch_width",
-                    ),
-                ),
-                pn.layout.Spacer(height=20),
-                pn.Row(
-                    pn.Column(
-                        pn.pane.Markdown("### Data Preview (First 100 rows)"),
-                        data_preview_pane,
-                        sizing_mode="stretch_width",
-                    ),
-                    data_stats_pane,
-                    sizing_mode="stretch_width",
-                ),
-                pn.layout.Spacer(height=30),
-                pn.pane.Markdown("**CSV file must have the following columns:**"),
-                pn.pane.Markdown("- `id`: Unique identifier for each work item"),
-                pn.pane.Markdown(
-                    "- `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD"
-                ),
-                pn.pane.Markdown(
-                    "- `end_date`: End date of the work item in ISO 8601 format"
-                ),
-            )
-            title = DATA_SOURCE_LABEL
+        content_func, title = CONTENT_MAPPING.get(
+            sim_type, CONTENT_MAPPING[DATA_SOURCE_LABEL]
+        )
+        content = content_func()
+
     return pn.Column(
         pn.pane.Markdown(f"# {title}"),
         content,
@@ -659,30 +503,7 @@ button_column = pn.Column(
 )
 
 # About section for sidebar
-about_text = pn.pane.Markdown(
-    """
-### About
-
-This dashboard uses Monte Carlo simulation to forecast either:
-
-1. When a specific number of work items will be completed
-2. How many work items can be completed in a given time period
-
-The forecasts are based on historical completion data.
-
-<a href="https://github.com/rodbv/kwando" target="_blank" style="display:inline-flex; align-items:center; text-decoration:none;">
-  <img src="https://e7.pngegg.com/pngimages/646/324/png-clipart-github-computer-icons-github-logo-monochrome-thumbnail.png" alt="GitHub" style="height:1.2em; margin-right:0.3em; vertical-align:middle;"/>
-  GitHub
-</a>
-
----
-
-**Credits:**
-- Monte Carlo simulation implementation adapted from [rueedlinger/monte-carlo-simulation](https://github.com/rueedlinger/monte-carlo-simulation)
-- Inspired by the book [Actionable Agile Metrics for Predictability: An Introduction](https://actionableagile.com/books/aamfp/) by Daniel Vacanti
-""",
-    styles={"font-size": "14px"},
-)
+about_text = load_about_text()
 
 # Sidebar with simulation type selection, basic about, and help button
 sidebar = pn.Column(

@@ -8,6 +8,36 @@ import pandas as pd
 PERCENTILES = [70, 80, 90, 95, 98]
 
 
+def load_and_prepare_data(csv_path: str) -> pd.DataFrame:
+    """
+    Load data from a CSV file and prepare it for Monte Carlo simulation.
+
+    Args:
+        csv_path: Path to the CSV file
+
+    Returns:
+        DataFrame with cycle_time_days column ready for simulation
+
+    Raises:
+        ValueError: If CSV doesn't have required columns
+        pd.errors.ParserError: If CSV can't be parsed
+    """
+    try:
+        df = pd.read_csv(csv_path)
+        if "start_date" not in df.columns or "end_date" not in df.columns:
+            raise ValueError(
+                "CSV must have start_date and end_date columns in ISO 8601 format."
+            )
+        return convert_dates_to_cycle_time(df)
+    except pd.errors.ParserError as e:
+        raise pd.errors.ParserError(f"Could not load data: {str(e)}") from e
+    except ValueError:
+        # Re-raise ValueError without wrapping it
+        raise
+    except Exception as e:
+        raise Exception(f"Could not load data: {str(e)}") from e
+
+
 def convert_dates_to_cycle_time(df: pd.DataFrame) -> pd.DataFrame:
     """
     Convert start_date and end_date columns to cycle_time_days.
@@ -197,3 +227,45 @@ def forecast_work_items_in_period(
         "end_date": end_ts.date().isoformat() if end_ts is not pd.NaT else None,
         "num_iterations": num_iterations,
     }
+
+
+def get_data_statistics(df: pd.DataFrame) -> dict[str, Any]:
+    """
+    Calculate basic statistics for a DataFrame with cycle_time_days column.
+
+    Args:
+        df: DataFrame with cycle_time_days column
+
+    Returns:
+        Dictionary with statistics including min, max, median cycle times and data quality info
+    """
+    if df is None or df.empty or "cycle_time_days" not in df.columns:
+        return {
+            "total_items": 0,
+            "min_cycle_time": 0,
+            "max_cycle_time": 0,
+            "median_cycle_time": 0,
+            "error": "No valid data available",
+        }
+
+    try:
+        min_cycle_time = df["cycle_time_days"].min()
+        max_cycle_time = df["cycle_time_days"].max()
+        median_cycle_time = df["cycle_time_days"].median()
+        total_items = len(df)
+
+        return {
+            "total_items": total_items,
+            "min_cycle_time": min_cycle_time,
+            "max_cycle_time": max_cycle_time,
+            "median_cycle_time": median_cycle_time,
+            "error": None,
+        }
+    except Exception as e:
+        return {
+            "total_items": 0,
+            "min_cycle_time": 0,
+            "max_cycle_time": 0,
+            "median_cycle_time": 0,
+            "error": f"Error calculating statistics: {str(e)}",
+        }

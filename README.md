@@ -1,4 +1,4 @@
-[🇬🇧 English](README.md) | [🇧🇷 Português](README-pt-br.md)
+[🇧🇷 Português](README-pt-br.md)
 
 [![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
 ![Coverage](https://img.shields.io/badge/coverage-97%25-green)
@@ -33,12 +33,14 @@ docker run -p 5006:5006 kwando-dashboard
 
 Then open [http://localhost:5006](http://localhost:5006) in your browser.
 
-### Prerequisites
+### Running from source
+
+#### Prerequisites
 
 - Python 3.12 or higher
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
 
-### Installation
+#### Installation
 
 1. Install uv:
    ```sh
