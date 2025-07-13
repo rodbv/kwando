@@ -2,6 +2,14 @@
 
 Dashboard for forecasting work item completion using Monte Carlo simulations. Made with Python and [Panel](https://panel.holoviz.org/).
 
+## 🚀 Run Online
+
+You can run the dashboard directly in your browser without installing anything:
+
+**[🌐 Run KWANDO Online](https://mybinder.org/v2/gh/YOUR-USERNAME/kwando/main?urlpath=proxy/8888/dashboard)**
+
+*Replace `YOUR-USERNAME` with your GitHub username*
+
 ## Features
 
 - **Forecast Completion Dates**: Calculate when a specific number of items will be completed

@@ -4,8 +4,13 @@
 
 Dashboard para prever a conclusão de itens de trabalho usando simulações Monte Carlo. Feito com Python e [Panel](https://panel.holoviz.org/).
 
-<img width="1435" height="759" alt="image" src="https://github.com/user-attachments/assets/62971b26-4dd1-45fd-b679-859f5d79d3a0" />
+## 🚀 Executar Online
 
+Você pode executar o dashboard diretamente no navegador sem instalar nada:
+
+**[🌐 Executar KWANDO Online](https://mybinder.org/v2/gh/SEU-USUARIO/kwando/main?urlpath=proxy/8888/dashboard)**
+
+*Substitua `SEU-USUARIO` pelo seu nome de usuário do GitHub*
 
 ## Funcionalidades
 
