@@ -174,3 +174,14 @@ poetry.toml
 pyrightconfig.json
 .DS_Store
 scripts/build-and-push.sh
+
+# Security scan results
+trivy-results.sarif
+bandit-report.json
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db

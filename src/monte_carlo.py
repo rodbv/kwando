@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from pandas._libs.tslibs.nattype import NaTType
 
 PERCENTILES = [70, 80, 90, 95, 98]
 
@@ -145,7 +146,7 @@ def forecast_days_for_work_items(
         str(p): float(np.quantile(simulated_totals, p / 100)) for p in PERCENTILES
     }
     percentile_dates = {
-        k: (start_ts + pd.Timedelta(days=v)).date().isoformat()
+        k: safe_isoformat(start_ts + pd.Timedelta(days=v))
         for k, v in percentiles.items()
     }
     return {
@@ -196,10 +197,8 @@ def forecast_work_items_in_period(
         return {
             "simulated_work_items": [],
             "percentiles": {},
-            "start_date": (
-                start_ts.date().isoformat() if start_ts is not pd.NaT else None
-            ),
-            "end_date": end_ts.date().isoformat() if end_ts is not pd.NaT else None,
+            "start_date": safe_isoformat(start_ts),
+            "end_date": safe_isoformat(end_ts),
             "num_iterations": num_iterations,
         }
 
@@ -208,7 +207,7 @@ def forecast_work_items_in_period(
         for _ in range(num_of_iterations):
             simulated_cycle_times = [0]
             while True:
-                n = random.choice(cycle_times) + simulated_cycle_times[-1]
+                n = random.choice(cycle_times) + simulated_cycle_times[-1]  # nosec: B311 - Monte Carlo simulation does not require cryptographic randomness
                 if n > max_days:
                     break
                 else:
@@ -223,8 +222,8 @@ def forecast_work_items_in_period(
     return {
         "simulated_work_items": simulated_work_items,
         "percentiles": percentiles,
-        "start_date": start_ts.date().isoformat() if start_ts is not pd.NaT else None,
-        "end_date": end_ts.date().isoformat() if end_ts is not pd.NaT else None,
+        "start_date": safe_isoformat(start_ts),
+        "end_date": safe_isoformat(end_ts),
         "num_iterations": num_iterations,
     }
 
@@ -269,3 +268,12 @@ def get_data_statistics(df: pd.DataFrame) -> dict[str, Any]:
             "median_cycle_time": 0,
             "error": f"Error calculating statistics: {str(e)}",
         }
+
+
+def safe_isoformat(ts):
+    if isinstance(ts, NaTType) or not pd.notnull(ts):
+        return None
+    d = ts.date() if hasattr(ts, "date") else ts
+    if isinstance(d, NaTType) or not pd.notnull(d):
+        return None
+    return d.isoformat() if hasattr(d, "isoformat") else str(d)
