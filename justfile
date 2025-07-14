@@ -26,7 +26,7 @@ test-once:
 
 # Run tests with coverage
 test-cov:
-    uv run pytest --cov=src --cov-report=html
+    cd src && uv run python -m pytest ../tests/ --cov=. --cov-report=html --cov-report=term
 
 # Run tests in watch mode
 test-watch:

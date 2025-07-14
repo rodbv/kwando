@@ -57,3 +57,21 @@ line-ending = "auto"
 
 [dependency-groups]
 dev = ["coverage>=7.9.2", "pytest-cov>=6.2.1", "pytest-mock>=3.14.1"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["src/dashboard.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
