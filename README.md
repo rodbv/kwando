@@ -19,19 +19,15 @@ Watch: [Your Project Behaves Like a Hurricane. Forecast It Like One (YouTube)](h
 
 ## Getting Started
 
-### Run with Docker (no local Python required)
+### Quick Start with Docker Hub (Recommended)
 
-If you have Docker installed, you can build and run Kwando without installing Python or any dependencies:
+The easiest way to run Kwando is using the pre-built Docker image from Docker Hub:
 
 ```sh
-# Build the Docker image (run this in the root of the repo)
-docker build -t kwando-dashboard .
-
-# Run the dashboard, exposing it on http://localhost:5006
-docker run -p 5006:5006 kwando-dashboard
+docker run -p 5006:5006 rodbv/kwando:latest
 ```
 
-Then open [http://localhost:5006](http://localhost:5006) in your browser.
+Then open [http://localhost:5006](http://localhost:5006) in your browser. No installation or setup required!
 
 ### Running from source
 
