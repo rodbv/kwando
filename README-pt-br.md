@@ -29,6 +29,8 @@ docker run -p 5006:5006 rodbv/kwando:latest
 
 Depois, acesse [http://localhost:5006](http://localhost:5006) no seu navegador. Sem instalação ou configuração necessária!
 
+> **Não tem Docker?** [Instale o Docker aqui](https://docs.docker.com/get-docker/)
+
 ## Começando
 
 ### Pré-requisitos
