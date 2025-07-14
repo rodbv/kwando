@@ -5,12 +5,15 @@ RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/
 
 WORKDIR /app
 
-# Copy requirements
-COPY pyproject.toml ./
-COPY uv.lock ./
+# Install uv
 RUN pip install --upgrade pip
 RUN pip install uv
-RUN uv pip install --system .
+
+# Copy dependency files first (for better caching)
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies (this layer will be cached if dependencies don't change)
+RUN uv sync --frozen
 
 # Copy the rest of the code
 COPY . .

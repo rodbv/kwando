@@ -24,12 +24,14 @@ Assista: [Seu projeto se comporta como um furacão. Faça previsões como um. (Y
 A forma mais fácil de rodar o Kwando é usando a imagem Docker pré-construída do Docker Hub:
 
 ```sh
-docker run -p 5006:5006 rodbv/kwando:latest
+docker run -p 5006:5006 -v $(pwd)/data:/app/data rodbv/kwando:latest
 ```
 
 Depois, acesse [http://localhost:5006](http://localhost:5006) no seu navegador. Sem instalação ou configuração necessária!
 
 > **Não tem Docker?** [Instale o Docker aqui](https://docs.docker.com/get-docker/)
+
+> **Nota:** A flag `-v $(pwd)/data:/app/data` cria um volume que persiste arquivos CSV carregados em uma pasta `data` no seu diretório atual.
 
 ## Começando
 
