@@ -32,6 +32,7 @@ docker run -p 5006:5006 -v $(pwd)/data:/app/data rodbv/kwando:latest
 ```
 
 Then open [http://localhost:5006](http://localhost:5006) in your browser. No installation or setup required!
+If you want a CSV file as an example, you can get them [here](https://github.com/rodbv/kwando/tree/main/data).
 
 > **Don't have Docker?** [Install Docker here](https://docs.docker.com/get-docker/)
 
