@@ -36,8 +36,6 @@ If you want a CSV file as an example, you can get them [here](https://github.com
 
 > **Don't have Docker?** [Install Docker here](https://docs.docker.com/get-docker/)
 
-> **Note:** The `-v $(pwd)/data:/app/data` flag creates a volume that persists uploaded CSV files in a `data` folder in your current directory.
-
 ### Running from source
 
 #### Prerequisites
