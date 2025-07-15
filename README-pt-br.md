@@ -29,6 +29,8 @@ docker run -p 5006:5006 -v $(pwd)/data:/app/data rodbv/kwando:latest
 
 Depois, acesse [http://localhost:5006](http://localhost:5006) no seu navegador. Sem instalação ou configuração necessária!
 
+Se você precisar de um arquivo CSV como exemplo, pode pegar [aqui](https://github.com/rodbv/kwando/tree/main/data).
+
 > **Não tem Docker?** [Instale o Docker aqui](https://docs.docker.com/get-docker/)
 
 > **Nota:** A flag `-v $(pwd)/data:/app/data` cria um volume que persiste arquivos CSV carregados em uma pasta `data` no seu diretório atual.
