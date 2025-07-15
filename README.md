@@ -1,7 +1,6 @@
 [🇧🇷 Português](README-pt-br.md)
 
 [![Tests](https://github.com/rodbv/kwando/actions/workflows/test.yml/badge.svg)](https://github.com/rodbv/kwando/actions/workflows/test.yml)
-![Coverage](https://img.shields.io/badge/coverage-97%25-green)
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![PyPI](https://img.shields.io/badge/PyPI-kwando-blue.svg)
