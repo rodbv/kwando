@@ -103,6 +103,7 @@ id,start_date,end_date
 
 - Keep changes focused and atomic
 - Include tests for new functionality
+- If you're fixing a bug, write regression tests
 - Update documentation if needed
 - Ensure all tests pass
 - Follow the existing code style
