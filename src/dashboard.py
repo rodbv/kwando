@@ -461,6 +461,10 @@ def _create_data_source_content():
             "- `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD"
         ),
         pn.pane.Markdown("- `end_date`: End date of the work item in ISO 8601 format"),
+        pn.layout.Spacer(height=20),
+        pn.pane.Markdown(
+            "**⬇️ Download sample CSV files:** [GitHub data folder](https://github.com/rodbv/kwando/tree/main/data)"
+        ),
     )
 
 
