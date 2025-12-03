@@ -9,52 +9,7 @@ from pandas._libs.tslibs.nattype import NaTType
 PERCENTILES = [70, 80, 90, 95, 98]
 
 
-def load_and_prepare_data(csv_path: str) -> pd.DataFrame:
-    """
-    Load data from a CSV file and prepare it for Monte Carlo simulation.
-
-    Args:
-        csv_path: Path to the CSV file
-
-    Returns:
-        DataFrame with throughput column ready for simulation
-
-    Raises:
-        ValueError: If CSV doesn't have required columns or invalid throughput values
-        pd.errors.ParserError: If CSV can't be parsed
-    """
-    try:
-        df = pd.read_csv(csv_path)
-        if "throughput" not in df.columns:
-            raise ValueError(
-                "CSV must have a 'throughput' column with weekly throughput values (items per week)."
-            )
-
-        # Validate throughput values are numeric and non-negative
-        if df["throughput"].isna().any():
-            raise ValueError("Throughput column contains missing values (NaN).")
-
-        try:
-            throughput_values = pd.to_numeric(df["throughput"], errors="raise")
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"Throughput values must be numeric: {str(e)}") from e
-
-        if (throughput_values < 0).any():
-            raise ValueError("Throughput values must be non-negative (>= 0).")
-
-        # Create a clean dataframe with just the throughput column
-        df_prepared = pd.DataFrame({"throughput": throughput_values})
-
-        return df_prepared
-    except pd.errors.ParserError as e:
-        raise pd.errors.ParserError(f"Could not load data: {str(e)}") from e
-    except ValueError:
-        # Re-raise ValueError without wrapping it
-        raise
-    except Exception as e:
-        raise Exception(f"Could not load data: {str(e)}") from e
-
-
+# Note: load_and_prepare_data function removed - CSV file support removed, only direct text input is supported
 # Note: convert_dates_to_cycle_time function removed - no longer needed for throughput-based forecasting
 
 
@@ -86,7 +41,7 @@ def parse_throughput_from_text(text_input: str) -> pd.DataFrame:
     if len(values_str) > 1000:
         raise ValueError(
             f"Too many values ({len(values_str)}). Maximum 1000 values allowed. "
-            "Please use a CSV file for larger datasets."
+            "Please reduce the number of values to 1000 or fewer."
         )
 
     # Convert to numeric, handling errors

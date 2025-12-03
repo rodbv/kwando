@@ -66,44 +66,19 @@ If you want a CSV file as an example, you can download some [here](https://githu
 
 ## Data Format
 
-You can provide throughput data in two ways:
-
-### Option 1: CSV File
-
-Your CSV file must have the following column:
-- `throughput`: Weekly throughput values (items completed per week), one value per row
-
-Each row represents one week of historical throughput data. Throughput values must be numeric and non-negative (zero is allowed).
-
-Example:
-
-```csv
-throughput
-5.0
-3.0
-7.0
-4.0
-6.0
-```
-
-This example shows 5 weeks of data with throughput values of 5, 3, 7, 4, and 6 items per week respectively.
-
-### Option 2: Direct Text Input
-
-You can also enter throughput values directly in the dashboard using comma-separated format:
+Enter throughput values directly in the dashboard using comma-separated format:
 - Enter values separated by commas: `2,3,5,2,4,6`
 - Whitespace around commas is automatically trimmed: `2, 3, 5, 2` works the same as `2,3,5,2`
 - All values must be numeric and non-negative (>= 0)
 - Decimal values are supported: `2.5,3.7,5.2`
-- Maximum 1000 values (use CSV for larger datasets)
+- Maximum 1000 values
+- Values are automatically saved and restored on next visit
 
 Example: `2,3,5,2,4,6` represents 6 weeks of throughput data.
 
 ## How to Use
 
-1. **Load Data**: Use the "Data Source" section to:
-   - Upload a CSV file or choose an existing file, OR
-   - Enter throughput values directly using comma-separated format (e.g., `2,3,5,2,4,6`)
+1. **Load Data**: Use the "Data Source" section to enter throughput values directly using comma-separated format (e.g., `2,3,5,2,4,6`). Values are automatically saved and restored on next visit.
 2. **Choose Analysis**:
    - **"When will it be done?"**: Calculate completion date for a specific number of items
    - **"How many items?"**: Calculate how many items can be completed in a period

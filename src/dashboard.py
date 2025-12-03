@@ -9,7 +9,6 @@ from monte_carlo import (
     forecast_work_items_in_period,
     get_data_statistics,
     get_next_business_day,
-    load_and_prepare_data,
     parse_throughput_from_text,
 )
 
@@ -37,67 +36,73 @@ data_source_button = pn.widgets.Button(
     name=DATA_SOURCE_LABEL, button_type="default", width=200
 )
 
-# List all CSV files in the data/ directory
-csv_files = [f"data/{f}" for f in os.listdir("data") if f.endswith(".csv")]
 
-# File selector widget
-file_selector = pn.widgets.Select(
-    name="Choose CSV file",
-    options=csv_files,
-    value=(
-        "data/data_clean.csv"
-        if "data/data_clean.csv" in csv_files
-        else (csv_files[0] if csv_files else None)
-    ),
-)
+# Helper functions for value persistence
+def save_throughput_values(value: str) -> None:
+    """Save throughput values to file storage."""
+    try:
+        os.makedirs("data", exist_ok=True)
+        with open("data/.throughput_values.txt", "w") as f:
+            f.write(value)
+    except (OSError, PermissionError):
+        # Silently fail if can't save - persistence is non-critical
+        pass
 
-# Add file upload widget
-file_input = pn.widgets.FileInput(accept=".csv", name="Upload CSV")
 
-# Add input mode selector (CSV file vs. direct text input)
-input_mode = pn.widgets.RadioButtonGroup(
-    name="Data Input Mode",
-    options=["CSV File", "Direct Input"],
-    value="CSV File",
-    button_type="default",
-    width=300,
-)
+def load_throughput_values() -> str:
+    """Load saved throughput values from file storage."""
+    try:
+        file_path = "data/.throughput_values.txt"
+        if os.path.exists(file_path):
+            with open(file_path) as f:
+                return f.read().strip()
+    except (OSError, PermissionError):
+        # Silently fail if can't load - persistence is non-critical
+        pass
+
+    return ""
+
+
+# Load saved values on startup
+saved_values = load_throughput_values()
 
 # Add text input widget for direct throughput entry
 throughput_text_input = pn.widgets.TextAreaInput(
     name="Enter Throughput Values",
     placeholder="2,3,5,2,4,6",
-    value="",
+    value=saved_values,
     height=100,
     width=400,
 )
 
 
-def handle_file_upload(event):
-    if file_input.value is not None and file_input.filename is not None:
-        filename = str(file_input.filename)
-        value = file_input.value
-        if isinstance(value, bytes):
-            save_path = os.path.join("data", filename)
-            with open(save_path, "wb") as f:
-                f.write(value)
-            # Refresh file selector options
-            csv_files = [f"data/{f}" for f in os.listdir("data") if f.endswith(".csv")]
-            file_selector.options = csv_files
-            file_selector.value = f"data/{filename}"
+# Save values when text input changes
+def handle_text_input_change(event):
+    """Save throughput values when user enters them."""
+    if throughput_text_input.value:
+        save_throughput_values(throughput_text_input.value)
+
+    # Update preview and stats
+    handle_text_input(event)
 
 
-file_input.param.watch(handle_file_upload, "value")
-
-
-def load_and_clean_data(filename: str) -> pd.DataFrame:
+def handle_text_input(event):
     """
-    Load data from a CSV file and convert to a dataframe
+    Handle text input changes and update preview/stats
     """
-    try:
-        return load_and_prepare_data(filename)
-    except (ValueError, pd.errors.ParserError, Exception) as e:
-        return pd.DataFrame({"Error": [str(e)]})
+    if not throughput_text_input.value or not throughput_text_input.value.strip():
+        data_preview_pane.object = pd.DataFrame(
+            {"Info": ["Enter comma-separated throughput values (e.g., 2,3,5,2)"]}
+        )
+        data_stats_pane.object = "### Data Statistics\n\nNo input provided."
+        return
+
+    # Load data from text input
+    full_df = load_data_from_text_input(throughput_text_input.value)
+    data_preview_pane.object = (
+        full_df.head(100) if "Error" not in full_df.columns else full_df
+    )
+    data_stats_pane.object = get_data_stats_as_markdown(full_df)
 
 
 def load_data_from_text_input(text_input: str) -> pd.DataFrame:
@@ -142,14 +147,20 @@ def get_data_stats_as_markdown(df):
 
 
 # The data preview pane, created once and updated reactively
-# Initialize based on default mode (CSV File)
-if file_selector.value:
-    initial_data = load_and_clean_data(file_selector.value)
+# Initialize based on saved values or show placeholder
+if saved_values and saved_values.strip():
+    initial_data = load_data_from_text_input(saved_values)
 else:
-    initial_data = pd.DataFrame({"Info": ["No CSV file found in data/ directory."]})
+    initial_data = pd.DataFrame(
+        {"Info": ["Enter comma-separated throughput values (e.g., 2,3,5,2)"]}
+    )
 
 data_preview_pane = pn.pane.DataFrame(
-    initial_data.head(100) if file_selector.value else initial_data,
+    initial_data.head(100)
+    if "Error" not in initial_data.columns
+    and not initial_data.empty
+    and "Info" not in initial_data.columns
+    else initial_data,
     name="Data Preview",
     height=400,
     width=500,
@@ -157,99 +168,14 @@ data_preview_pane = pn.pane.DataFrame(
 data_stats_pane = pn.pane.Markdown(
     (
         get_data_stats_as_markdown(initial_data)
-        if file_selector.value
-        else "### Data Statistics\n\nNo file available."
+        if saved_values and saved_values.strip() and "Error" not in initial_data.columns
+        else "### Data Statistics\n\nEnter throughput values to see statistics."
     ),
     sizing_mode="stretch_width",
 )
 
-# On startup, if no file is available, show a message
-if not file_selector.value:
-    data_preview_pane.object = pd.DataFrame(
-        {"Info": ["No CSV file found in data/ directory."]}
-    )
-    data_stats_pane.object = "### Data Statistics\n\nNo file available."
 
-
-def handle_file_selection(event):
-    """
-    Handle file selection and update preview/stats
-    """
-    if input_mode.value != "CSV File":
-        return  # Only handle if CSV mode is active
-
-    if not file_selector.value:
-        data_preview_pane.object = pd.DataFrame(
-            {"Info": ["No CSV file selected or available in data/ directory."]}
-        )
-        data_stats_pane.object = "### Data Statistics\n\nNo file selected."
-        return
-
-    # Load data without tag filtering
-    full_df = load_and_clean_data(file_selector.value)
-    data_preview_pane.object = (
-        full_df.head(100) if "Error" not in full_df.columns else full_df
-    )
-    data_stats_pane.object = get_data_stats_as_markdown(full_df)
-
-
-def handle_text_input(event):
-    """
-    Handle text input changes and update preview/stats
-    """
-    if input_mode.value != "Direct Input":
-        return  # Only handle if Direct Input mode is active
-
-    if not throughput_text_input.value or not throughput_text_input.value.strip():
-        data_preview_pane.object = pd.DataFrame(
-            {"Info": ["Enter comma-separated throughput values (e.g., 2,3,5,2)"]}
-        )
-        data_stats_pane.object = "### Data Statistics\n\nNo input provided."
-        return
-
-    # Load data from text input
-    full_df = load_data_from_text_input(throughput_text_input.value)
-    data_preview_pane.object = (
-        full_df.head(100) if "Error" not in full_df.columns else full_df
-    )
-    data_stats_pane.object = get_data_stats_as_markdown(full_df)
-
-
-def handle_input_mode_change(event):
-    """
-    Handle input mode changes and update preview/stats based on active mode
-    """
-    if event.new == "CSV File":
-        # Switch to CSV mode - load from file selector
-        if file_selector.value:
-            full_df = load_and_clean_data(file_selector.value)
-            data_preview_pane.object = (
-                full_df.head(100) if "Error" not in full_df.columns else full_df
-            )
-            data_stats_pane.object = get_data_stats_as_markdown(full_df)
-        else:
-            data_preview_pane.object = pd.DataFrame(
-                {"Info": ["No CSV file selected or available in data/ directory."]}
-            )
-            data_stats_pane.object = "### Data Statistics\n\nNo file selected."
-    else:  # Direct Input mode
-        # Switch to direct input mode - load from text input
-        if throughput_text_input.value and throughput_text_input.value.strip():
-            full_df = load_data_from_text_input(throughput_text_input.value)
-            data_preview_pane.object = (
-                full_df.head(100) if "Error" not in full_df.columns else full_df
-            )
-            data_stats_pane.object = get_data_stats_as_markdown(full_df)
-        else:
-            data_preview_pane.object = pd.DataFrame(
-                {"Info": ["Enter comma-separated throughput values (e.g., 2,3,5,2)"]}
-            )
-            data_stats_pane.object = "### Data Statistics\n\nNo input provided."
-
-
-file_selector.param.watch(handle_file_selection, "value")
-throughput_text_input.param.watch(handle_text_input, "value")
-input_mode.param.watch(handle_input_mode_change, "value")
+throughput_text_input.param.watch(handle_text_input_change, "value")
 
 
 # Create a parameter to track which simulation is active
@@ -418,28 +344,17 @@ def update_period_results(df, start_date, end_date):
 # Create the reactive functions that update based on widget changes
 @pn.depends(
     num_cards_slider.param.value,
-    input_mode.param.value,
-    file_selector.param.value,
     throughput_text_input.param.value,
 )
-def get_work_items_results(num_cards, mode, selected_file, text_input):
-    # Get data based on current input mode
-    if mode == "Direct Input":
-        if not text_input or not text_input.strip():
-            return pn.Column(
-                pn.pane.Markdown(
-                    "## Warning\n\nNo valid data loaded. Please enter throughput values."
-                )
+def get_work_items_results(num_cards, text_input):
+    # Get data from direct input
+    if not text_input or not text_input.strip():
+        return pn.Column(
+            pn.pane.Markdown(
+                "## Warning\n\nNo valid data loaded. Please enter throughput values."
             )
-        df = load_data_from_text_input(text_input)
-    else:  # CSV File mode
-        if not selected_file:
-            return pn.Column(
-                pn.pane.Markdown(
-                    "## Warning\n\nNo valid data loaded. Please select a CSV file."
-                )
-            )
-        df = load_and_clean_data(selected_file)
+        )
+    df = load_data_from_text_input(text_input)
 
     if not isinstance(df, pd.DataFrame) or "Error" in df.columns:
         return pn.Column(pn.pane.Markdown("## Warning\n\nNo valid data loaded."))
@@ -450,28 +365,17 @@ def get_work_items_results(num_cards, mode, selected_file, text_input):
 @pn.depends(
     period_start_date.param.value,
     period_end_date.param.value,
-    input_mode.param.value,
-    file_selector.param.value,
     throughput_text_input.param.value,
 )
-def get_period_results(start_date, end_date, mode, selected_file, text_input):
-    # Get data based on current input mode
-    if mode == "Direct Input":
-        if not text_input or not text_input.strip():
-            return pn.Column(
-                pn.pane.Markdown(
-                    "## Warning\n\nNo valid data loaded. Please enter throughput values."
-                )
+def get_period_results(start_date, end_date, text_input):
+    # Get data from direct input
+    if not text_input or not text_input.strip():
+        return pn.Column(
+            pn.pane.Markdown(
+                "## Warning\n\nNo valid data loaded. Please enter throughput values."
             )
-        df = load_data_from_text_input(text_input)
-    else:  # CSV File mode
-        if not selected_file:
-            return pn.Column(
-                pn.pane.Markdown(
-                    "## Warning\n\nNo valid data loaded. Please select a CSV file."
-                )
-            )
-        df = load_and_clean_data(selected_file)
+        )
+    df = load_data_from_text_input(text_input)
 
     if not isinstance(df, pd.DataFrame) or "Error" in df.columns:
         return pn.Column(pn.pane.Markdown("## Warning\n\nNo valid data loaded."))
@@ -485,15 +389,8 @@ period_results = get_period_results
 
 # Create reactive data source info
 def get_data_source_info():
-    """Get data source info based on current input mode."""
-    mode = input_mode.value
-    selected_file = file_selector.value
-
-    if mode == "Direct Input":
-        return pn.pane.Markdown("**Data Source:** Direct Input")
-    if not selected_file:
-        return pn.pane.Markdown("**Data Source:** No file selected")
-    return pn.pane.Markdown(f"**Data Source:** {selected_file}")
+    """Get data source info."""
+    return pn.pane.Markdown("**Data Source:** Direct Input")
 
 
 # Load help text from markdown file
@@ -540,8 +437,7 @@ def load_about_text():
         )
 
 
-@pn.depends(input_mode.param.value, file_selector.param.value)
-def _create_work_items_content(mode, selected_file):
+def _create_work_items_content():
     """Create content for work items simulation."""
     return pn.Column(
         pn.Row(
@@ -555,8 +451,7 @@ def _create_work_items_content(mode, selected_file):
     )
 
 
-@pn.depends(input_mode.param.value, file_selector.param.value)
-def _create_period_content(mode, selected_file):
+def _create_period_content():
     """Create content for time period simulation."""
     return pn.Column(
         pn.Row(
@@ -573,37 +468,19 @@ def _create_period_content(mode, selected_file):
 
 def _create_data_source_content():
     """Create content for data source page."""
-    mode = input_mode.value
-
-    csv_section = pn.Column(
-        pn.pane.Markdown("### CSV File Input"),
-        file_input,
-        file_selector,
-        pn.layout.Spacer(height=20),
-        sizing_mode="stretch_width",
-    )
-
-    direct_input_section = pn.Column(
-        pn.pane.Markdown("### Direct Text Input"),
-        pn.pane.Markdown(
-            "Enter comma-separated throughput values (e.g., `2,3,5,2,4,6`). "
-            "Whitespace around commas is automatically trimmed."
-        ),
-        throughput_text_input,
-        pn.layout.Spacer(height=20),
-        sizing_mode="stretch_width",
-    )
-
     return pn.Column(
         pn.Row(
             pn.Column(
-                pn.pane.Markdown("### Choose Data Input Method"),
-                input_mode,
+                pn.pane.Markdown("### Enter Throughput Values"),
+                pn.pane.Markdown(
+                    "Enter comma-separated throughput values (e.g., `2,3,5,2,4,6`). "
+                    "Whitespace around commas is automatically trimmed. Values are automatically saved."
+                ),
+                throughput_text_input,
                 pn.layout.Spacer(height=20),
                 sizing_mode="stretch_width",
             ),
         ),
-        csv_section if mode == "CSV File" else direct_input_section,
         pn.layout.Spacer(height=20),
         pn.Row(
             pn.Column(
@@ -615,24 +492,13 @@ def _create_data_source_content():
             sizing_mode="stretch_width",
         ),
         pn.layout.Spacer(height=30),
-        pn.pane.Markdown("**CSV file format:**"),
-        pn.pane.Markdown(
-            "- `throughput`: Weekly throughput values (items completed per week), one value per row"
-        ),
-        pn.pane.Markdown(""),
-        pn.pane.Markdown("**Example CSV format:**"),
-        pn.pane.Markdown("```csv\nthroughput\n5.0\n3.0\n7.0\n4.0\n```"),
-        pn.pane.Markdown(""),
-        pn.pane.Markdown("**Direct input format:**"),
+        pn.pane.Markdown("**Input format:**"),
         pn.pane.Markdown(
             "- Comma-separated values: `2,3,5,2,4,6` or `2, 3, 5, 2, 4, 6`"
         ),
         pn.pane.Markdown("- All values must be numeric and non-negative (>= 0)"),
-        pn.pane.Markdown("- Maximum 1000 values (use CSV for larger datasets)"),
-        pn.layout.Spacer(height=20),
-        pn.pane.Markdown(
-            "**⬇️ Download sample CSV files:** [GitHub data folder](https://github.com/rodbv/kwando/tree/main/data)"
-        ),
+        pn.pane.Markdown("- Maximum 1000 values"),
+        pn.pane.Markdown("- Values are automatically saved and restored on next visit"),
     )
 
 
@@ -648,10 +514,8 @@ CONTENT_MAPPING = {
 @pn.depends(
     help_visible.param.value,
     active_simulation.param.value,
-    input_mode.param.value,
-    file_selector.param.value,
 )
-def get_main_content(show_help, sim_type, mode, selected_file):
+def get_main_content(show_help, sim_type):
     if show_help:
         content = help_text
         title = "About Monte Carlo Simulation"
@@ -659,14 +523,7 @@ def get_main_content(show_help, sim_type, mode, selected_file):
         content_func, title = CONTENT_MAPPING.get(
             sim_type, CONTENT_MAPPING[DATA_SOURCE_LABEL]
         )
-        # Pass required parameters for reactive content functions
-        if (
-            content_func == _create_work_items_content
-            or content_func == _create_period_content
-        ):
-            content = content_func(mode, selected_file)
-        else:
-            content = content_func()
+        content = content_func()
 
     return pn.Column(
         pn.pane.Markdown(f"# {title}"),
@@ -725,6 +582,50 @@ template = pn.template.FastListTemplate(
     theme_toggle=True,
     theme="default",
 )
+
+# Add JavaScript for browser localStorage (client-side persistence)
+# This runs in the browser to save/load values from localStorage
+localStorage_script = """
+<script>
+(function() {
+    function initLocalStorage() {
+        if (typeof window === 'undefined' || !window.localStorage) return;
+
+        const textInput = document.querySelector('textarea[name="Enter Throughput Values"]');
+        if (!textInput) {
+            setTimeout(initLocalStorage, 100);
+            return;
+        }
+
+        // Load from localStorage on page load (if file storage didn't provide a value)
+        const saved = localStorage.getItem('kwando_throughput_values');
+        if (saved && (!textInput.value || textInput.value.trim() === '')) {
+            textInput.value = saved;
+            // Trigger change event to update preview
+            const event = new Event('input', { bubbles: true });
+            textInput.dispatchEvent(event);
+        }
+
+        // Save to localStorage on input
+        textInput.addEventListener('input', function() {
+            localStorage.setItem('kwando_throughput_values', this.value);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLocalStorage);
+    } else {
+        initLocalStorage();
+    }
+
+    // Also try after Panel loads dynamically
+    setTimeout(initLocalStorage, 500);
+})();
+</script>
+"""
+
+# Inject script into template header
+template.header.append(pn.pane.HTML(localStorage_script))
 
 
 # Update accent color based on theme
