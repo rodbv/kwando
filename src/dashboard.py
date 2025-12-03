@@ -97,10 +97,11 @@ def get_data_stats_as_markdown(df):
         # Format as a Markdown string
         stats_md = f"""
 ### Data Statistics
-- **Total Work Items:** {stats['total_items']}
-- **Min Cycle Time:** `{stats['min_cycle_time']}` days
-- **Max Cycle Time:** `{stats['max_cycle_time']}` days
-- **Median Cycle Time:** `{stats['median_cycle_time']:.1f}` days
+- **Total Weeks of Data:** {stats['total_weeks']}
+- **Average Weekly Throughput:** `{stats['avg_throughput']:.2f}` items/week
+- **Min Weekly Throughput:** `{stats['min_throughput']:.2f}` items/week
+- **Max Weekly Throughput:** `{stats['max_throughput']:.2f}` items/week
+- **Median Weekly Throughput:** `{stats['median_throughput']:.2f}` items/week
 """
         return stats_md
     except Exception as e:
@@ -455,12 +456,13 @@ def _create_data_source_content():
             sizing_mode="stretch_width",
         ),
         pn.layout.Spacer(height=30),
-        pn.pane.Markdown("**CSV file must have the following columns:**"),
-        pn.pane.Markdown("- `id`: Unique identifier for each work item"),
+        pn.pane.Markdown("**CSV file must have the following column:**"),
         pn.pane.Markdown(
-            "- `start_date`: Start date of the work item in ISO 8601 format or YYYY-MM-DD"
+            "- `throughput`: Weekly throughput values (items completed per week), one value per row"
         ),
-        pn.pane.Markdown("- `end_date`: End date of the work item in ISO 8601 format"),
+        pn.pane.Markdown(""),
+        pn.pane.Markdown("**Example CSV format:**"),
+        pn.pane.Markdown("```csv\nthroughput\n5.0\n3.0\n7.0\n4.0\n```"),
         pn.layout.Spacer(height=20),
         pn.pane.Markdown(
             "**⬇️ Download sample CSV files:** [GitHub data folder](https://github.com/rodbv/kwando/tree/main/data)"

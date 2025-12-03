@@ -66,19 +66,23 @@ If you want a CSV file as an example, you can download some [here](https://githu
 
 ## Data Format
 
-Your CSV file must have the following columns:
-- `id`: Unique identifier for each work item
-- `start_date`: Start date of the work item in ISO 8601 format (YYYY-MM-DD)
-- `end_date`: End date of the work item in ISO 8601 format (YYYY-MM-DD)
+Your CSV file must have the following column:
+- `throughput`: Weekly throughput values (items completed per week), one value per row
+
+Each row represents one week of historical throughput data. Throughput values must be numeric and non-negative (zero is allowed).
 
 Example:
 
 ```csv
-id,start_date,end_date
-1,2024-01-01,2024-01-01
-2,2024-01-01,2024-01-02
-3,2024-01-01,2024-01-03
+throughput
+5.0
+3.0
+7.0
+4.0
+6.0
 ```
+
+This example shows 5 weeks of data with throughput values of 5, 3, 7, 4, and 6 items per week respectively.
 
 ## How to Use
 

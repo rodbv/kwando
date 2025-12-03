@@ -7,9 +7,10 @@ Monte Carlo simulation is a mathematical technique that helps us make prediction
 3. Analyzing the results to provide confidence levels
 
 ## What Data Are We Using?
-- We analyze your team's actual cycle times (how long items took from start to finish)
-- Each work item's cycle time captures the full "system time" including delays, dependencies, and rework
+- We analyze your team's actual weekly throughput (how many items were completed per week)
+- Each row in your CSV represents one week of historical throughput data
 - We use this real data rather than estimates because it includes all the natural variation in your delivery system
+- Throughput captures your team's actual delivery capacity, accounting for all the factors that affect completion rates
 
 ## How to Read the Results
 - The forecasts show different confidence levels (70% to 98%)
@@ -22,7 +23,7 @@ Monte Carlo simulation is a mathematical technique that helps us make prediction
 
 2. **Probabilistic vs Deterministic**: Instead of a single date, we provide a range of possibilities with confidence levels. This better reflects the inherent uncertainty in knowledge work.
 
-3. **System Thinking**: The cycle times reflect your entire delivery system - not just coding time but also reviews, testing, deployments, and any delays. This gives you a more realistic picture of delivery times.
+3. **System Thinking**: The throughput values reflect your entire delivery system - not just coding time but also reviews, testing, deployments, and any delays. This gives you a more realistic picture of your team's actual delivery capacity.
 
 ## When to Use Each Simulation
 - **"When will it be done?"** - Use when you have a specific number of work items and need to forecast completion dates
@@ -31,7 +32,7 @@ Monte Carlo simulation is a mathematical technique that helps us make prediction
 ## Making Better Decisions
 - Use higher confidence levels (90%+) for important commitments or dependencies
 - Use lower confidence levels (70-80%) for internal planning or less critical items
-- Look for ways to reduce your cycle times to improve all forecasts
+- Look for ways to increase your throughput to improve all forecasts
 - Remember: the goal is to make informed decisions, not to get exact predictions
 
 ## Learn More
