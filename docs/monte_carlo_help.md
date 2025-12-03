@@ -8,9 +8,8 @@ Monte Carlo simulation is a mathematical technique that helps us make prediction
 
 ## What Data Are We Using?
 - We analyze your team's actual weekly throughput (how many items were completed per week)
-- You can provide data in two ways:
-  - **CSV file**: Each row represents one week of historical throughput data
-  - **Direct text input**: Enter comma-separated values (e.g., `2,3,5,2,4,6`) directly in the dashboard
+- Enter comma-separated values (e.g., `2,3,5,2,4,6`) directly in the dashboard
+- Values are automatically saved and restored on next visit
 - We use this real data rather than estimates because it includes all the natural variation in your delivery system
 - Throughput captures your team's actual delivery capacity, accounting for all the factors that affect completion rates
 
