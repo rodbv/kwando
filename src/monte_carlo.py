@@ -58,6 +58,55 @@ def load_and_prepare_data(csv_path: str) -> pd.DataFrame:
 # Note: convert_dates_to_cycle_time function removed - no longer needed for throughput-based forecasting
 
 
+def parse_throughput_from_text(text_input: str) -> pd.DataFrame:
+    """
+    Parse comma-separated throughput values from text input and prepare for Monte Carlo simulation.
+
+    Args:
+        text_input: Comma-separated throughput values (e.g., "2,3,5,2" or "2, 3, 5, 2")
+
+    Returns:
+        DataFrame with throughput column ready for simulation
+
+    Raises:
+        ValueError: If input is empty, contains invalid values, or values are negative
+    """
+    if not text_input or not text_input.strip():
+        raise ValueError("Throughput input cannot be empty.")
+
+    # Split by comma and strip whitespace from each value
+    values_str = [v.strip() for v in text_input.split(",") if v.strip()]
+
+    if not values_str:
+        raise ValueError(
+            "No valid throughput values found. Please enter comma-separated numeric values."
+        )
+
+    # Limit to 1000 values for performance
+    if len(values_str) > 1000:
+        raise ValueError(
+            f"Too many values ({len(values_str)}). Maximum 1000 values allowed. "
+            "Please use a CSV file for larger datasets."
+        )
+
+    # Convert to numeric, handling errors
+    try:
+        throughput_values = pd.to_numeric(values_str, errors="raise")
+    except (ValueError, TypeError) as e:
+        raise ValueError(
+            f"Invalid throughput values. All values must be numeric. Error: {str(e)}"
+        ) from e
+
+    # Validate non-negative
+    if (throughput_values < 0).any():
+        raise ValueError("Throughput values must be non-negative (>= 0).")
+
+    # Create DataFrame with throughput column
+    df_prepared = pd.DataFrame({"throughput": throughput_values})
+
+    return df_prepared
+
+
 def get_next_business_day() -> date:
     """Calculate the next business day from today"""
     next_day = datetime.now() + timedelta(days=1)

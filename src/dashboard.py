@@ -10,6 +10,7 @@ from monte_carlo import (
     get_data_statistics,
     get_next_business_day,
     load_and_prepare_data,
+    parse_throughput_from_text,
 )
 
 # Initialize Panel with template support
@@ -53,6 +54,24 @@ file_selector = pn.widgets.Select(
 # Add file upload widget
 file_input = pn.widgets.FileInput(accept=".csv", name="Upload CSV")
 
+# Add input mode selector (CSV file vs. direct text input)
+input_mode = pn.widgets.RadioButtonGroup(
+    name="Data Input Mode",
+    options=["CSV File", "Direct Input"],
+    value="CSV File",
+    button_type="default",
+    width=300,
+)
+
+# Add text input widget for direct throughput entry
+throughput_text_input = pn.widgets.TextAreaInput(
+    name="Enter Throughput Values",
+    placeholder="2,3,5,2,4,6",
+    value="",
+    height=100,
+    width=400,
+)
+
 
 def handle_file_upload(event):
     if file_input.value is not None and file_input.filename is not None:
@@ -79,6 +98,18 @@ def load_and_clean_data(filename: str) -> pd.DataFrame:
         return load_and_prepare_data(filename)
     except (ValueError, pd.errors.ParserError, Exception) as e:
         return pd.DataFrame({"Error": [str(e)]})
+
+
+def load_data_from_text_input(text_input: str) -> pd.DataFrame:
+    """
+    Load data from text input and convert to a dataframe
+    """
+    try:
+        return parse_throughput_from_text(text_input)
+    except ValueError as e:
+        return pd.DataFrame({"Error": [str(e)]})
+    except Exception as e:
+        return pd.DataFrame({"Error": [f"Could not parse input: {str(e)}"]})
 
 
 def get_data_stats_as_markdown(df):
@@ -111,6 +142,7 @@ def get_data_stats_as_markdown(df):
 
 
 # The data preview pane, created once and updated reactively
+# Initialize based on default mode (CSV File)
 if file_selector.value:
     initial_data = load_and_clean_data(file_selector.value)
 else:
@@ -143,6 +175,9 @@ def handle_file_selection(event):
     """
     Handle file selection and update preview/stats
     """
+    if input_mode.value != "CSV File":
+        return  # Only handle if CSV mode is active
+
     if not file_selector.value:
         data_preview_pane.object = pd.DataFrame(
             {"Info": ["No CSV file selected or available in data/ directory."]}
@@ -158,7 +193,63 @@ def handle_file_selection(event):
     data_stats_pane.object = get_data_stats_as_markdown(full_df)
 
 
+def handle_text_input(event):
+    """
+    Handle text input changes and update preview/stats
+    """
+    if input_mode.value != "Direct Input":
+        return  # Only handle if Direct Input mode is active
+
+    if not throughput_text_input.value or not throughput_text_input.value.strip():
+        data_preview_pane.object = pd.DataFrame(
+            {"Info": ["Enter comma-separated throughput values (e.g., 2,3,5,2)"]}
+        )
+        data_stats_pane.object = "### Data Statistics\n\nNo input provided."
+        return
+
+    # Load data from text input
+    full_df = load_data_from_text_input(throughput_text_input.value)
+    data_preview_pane.object = (
+        full_df.head(100) if "Error" not in full_df.columns else full_df
+    )
+    data_stats_pane.object = get_data_stats_as_markdown(full_df)
+
+
+def handle_input_mode_change(event):
+    """
+    Handle input mode changes and update preview/stats based on active mode
+    """
+    if event.new == "CSV File":
+        # Switch to CSV mode - load from file selector
+        if file_selector.value:
+            full_df = load_and_clean_data(file_selector.value)
+            data_preview_pane.object = (
+                full_df.head(100) if "Error" not in full_df.columns else full_df
+            )
+            data_stats_pane.object = get_data_stats_as_markdown(full_df)
+        else:
+            data_preview_pane.object = pd.DataFrame(
+                {"Info": ["No CSV file selected or available in data/ directory."]}
+            )
+            data_stats_pane.object = "### Data Statistics\n\nNo file selected."
+    else:  # Direct Input mode
+        # Switch to direct input mode - load from text input
+        if throughput_text_input.value and throughput_text_input.value.strip():
+            full_df = load_data_from_text_input(throughput_text_input.value)
+            data_preview_pane.object = (
+                full_df.head(100) if "Error" not in full_df.columns else full_df
+            )
+            data_stats_pane.object = get_data_stats_as_markdown(full_df)
+        else:
+            data_preview_pane.object = pd.DataFrame(
+                {"Info": ["Enter comma-separated throughput values (e.g., 2,3,5,2)"]}
+            )
+            data_stats_pane.object = "### Data Statistics\n\nNo input provided."
+
+
 file_selector.param.watch(handle_file_selection, "value")
+throughput_text_input.param.watch(handle_text_input, "value")
+input_mode.param.watch(handle_input_mode_change, "value")
 
 
 # Create a parameter to track which simulation is active
@@ -327,11 +418,30 @@ def update_period_results(df, start_date, end_date):
 # Create the reactive functions that update based on widget changes
 @pn.depends(
     num_cards_slider.param.value,
+    input_mode.param.value,
     file_selector.param.value,
+    throughput_text_input.param.value,
 )
-def get_work_items_results(num_cards, selected_file):
-    df = data_preview_pane.object
-    if not isinstance(df, pd.DataFrame):
+def get_work_items_results(num_cards, mode, selected_file, text_input):
+    # Get data based on current input mode
+    if mode == "Direct Input":
+        if not text_input or not text_input.strip():
+            return pn.Column(
+                pn.pane.Markdown(
+                    "## Warning\n\nNo valid data loaded. Please enter throughput values."
+                )
+            )
+        df = load_data_from_text_input(text_input)
+    else:  # CSV File mode
+        if not selected_file:
+            return pn.Column(
+                pn.pane.Markdown(
+                    "## Warning\n\nNo valid data loaded. Please select a CSV file."
+                )
+            )
+        df = load_and_clean_data(selected_file)
+
+    if not isinstance(df, pd.DataFrame) or "Error" in df.columns:
         return pn.Column(pn.pane.Markdown("## Warning\n\nNo valid data loaded."))
     return update_work_items_results(df, num_cards)
 
@@ -340,11 +450,30 @@ def get_work_items_results(num_cards, selected_file):
 @pn.depends(
     period_start_date.param.value,
     period_end_date.param.value,
+    input_mode.param.value,
     file_selector.param.value,
+    throughput_text_input.param.value,
 )
-def get_period_results(start_date, end_date, selected_file):
-    df = data_preview_pane.object
-    if not isinstance(df, pd.DataFrame):
+def get_period_results(start_date, end_date, mode, selected_file, text_input):
+    # Get data based on current input mode
+    if mode == "Direct Input":
+        if not text_input or not text_input.strip():
+            return pn.Column(
+                pn.pane.Markdown(
+                    "## Warning\n\nNo valid data loaded. Please enter throughput values."
+                )
+            )
+        df = load_data_from_text_input(text_input)
+    else:  # CSV File mode
+        if not selected_file:
+            return pn.Column(
+                pn.pane.Markdown(
+                    "## Warning\n\nNo valid data loaded. Please select a CSV file."
+                )
+            )
+        df = load_and_clean_data(selected_file)
+
+    if not isinstance(df, pd.DataFrame) or "Error" in df.columns:
         return pn.Column(pn.pane.Markdown("## Warning\n\nNo valid data loaded."))
     return update_period_results(df, start_date, end_date)
 
@@ -356,9 +485,15 @@ period_results = get_period_results
 
 # Create reactive data source info
 def get_data_source_info():
-    if not file_selector.value:
+    """Get data source info based on current input mode."""
+    mode = input_mode.value
+    selected_file = file_selector.value
+
+    if mode == "Direct Input":
+        return pn.pane.Markdown("**Data Source:** Direct Input")
+    if not selected_file:
         return pn.pane.Markdown("**Data Source:** No file selected")
-    return pn.pane.Markdown(f"**Data Source:** {file_selector.value}")
+    return pn.pane.Markdown(f"**Data Source:** {selected_file}")
 
 
 # Load help text from markdown file
@@ -405,7 +540,8 @@ def load_about_text():
         )
 
 
-def _create_work_items_content():
+@pn.depends(input_mode.param.value, file_selector.param.value)
+def _create_work_items_content(mode, selected_file):
     """Create content for work items simulation."""
     return pn.Column(
         pn.Row(
@@ -419,7 +555,8 @@ def _create_work_items_content():
     )
 
 
-def _create_period_content():
+@pn.depends(input_mode.param.value, file_selector.param.value)
+def _create_period_content(mode, selected_file):
     """Create content for time period simulation."""
     return pn.Column(
         pn.Row(
@@ -436,15 +573,37 @@ def _create_period_content():
 
 def _create_data_source_content():
     """Create content for data source page."""
+    mode = input_mode.value
+
+    csv_section = pn.Column(
+        pn.pane.Markdown("### CSV File Input"),
+        file_input,
+        file_selector,
+        pn.layout.Spacer(height=20),
+        sizing_mode="stretch_width",
+    )
+
+    direct_input_section = pn.Column(
+        pn.pane.Markdown("### Direct Text Input"),
+        pn.pane.Markdown(
+            "Enter comma-separated throughput values (e.g., `2,3,5,2,4,6`). "
+            "Whitespace around commas is automatically trimmed."
+        ),
+        throughput_text_input,
+        pn.layout.Spacer(height=20),
+        sizing_mode="stretch_width",
+    )
+
     return pn.Column(
         pn.Row(
             pn.Column(
-                file_input,
-                file_selector,
-                pn.layout.Spacer(height=10),
+                pn.pane.Markdown("### Choose Data Input Method"),
+                input_mode,
+                pn.layout.Spacer(height=20),
                 sizing_mode="stretch_width",
             ),
         ),
+        csv_section if mode == "CSV File" else direct_input_section,
         pn.layout.Spacer(height=20),
         pn.Row(
             pn.Column(
@@ -456,13 +615,20 @@ def _create_data_source_content():
             sizing_mode="stretch_width",
         ),
         pn.layout.Spacer(height=30),
-        pn.pane.Markdown("**CSV file must have the following column:**"),
+        pn.pane.Markdown("**CSV file format:**"),
         pn.pane.Markdown(
             "- `throughput`: Weekly throughput values (items completed per week), one value per row"
         ),
         pn.pane.Markdown(""),
         pn.pane.Markdown("**Example CSV format:**"),
         pn.pane.Markdown("```csv\nthroughput\n5.0\n3.0\n7.0\n4.0\n```"),
+        pn.pane.Markdown(""),
+        pn.pane.Markdown("**Direct input format:**"),
+        pn.pane.Markdown(
+            "- Comma-separated values: `2,3,5,2,4,6` or `2, 3, 5, 2, 4, 6`"
+        ),
+        pn.pane.Markdown("- All values must be numeric and non-negative (>= 0)"),
+        pn.pane.Markdown("- Maximum 1000 values (use CSV for larger datasets)"),
         pn.layout.Spacer(height=20),
         pn.pane.Markdown(
             "**⬇️ Download sample CSV files:** [GitHub data folder](https://github.com/rodbv/kwando/tree/main/data)"
@@ -479,8 +645,13 @@ CONTENT_MAPPING = {
 
 
 # Create a dynamic panel with smooth transitions
-@pn.depends(help_visible.param.value, active_simulation.param.value)
-def get_main_content(show_help, sim_type):
+@pn.depends(
+    help_visible.param.value,
+    active_simulation.param.value,
+    input_mode.param.value,
+    file_selector.param.value,
+)
+def get_main_content(show_help, sim_type, mode, selected_file):
     if show_help:
         content = help_text
         title = "About Monte Carlo Simulation"
@@ -488,7 +659,14 @@ def get_main_content(show_help, sim_type):
         content_func, title = CONTENT_MAPPING.get(
             sim_type, CONTENT_MAPPING[DATA_SOURCE_LABEL]
         )
-        content = content_func()
+        # Pass required parameters for reactive content functions
+        if (
+            content_func == _create_work_items_content
+            or content_func == _create_period_content
+        ):
+            content = content_func(mode, selected_file)
+        else:
+            content = content_func()
 
     return pn.Column(
         pn.pane.Markdown(f"# {title}"),

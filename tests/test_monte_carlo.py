@@ -8,6 +8,7 @@ from monte_carlo import (
     get_data_statistics,
     get_next_business_day,
     load_and_prepare_data,
+    parse_throughput_from_text,
 )
 
 
@@ -452,4 +453,140 @@ def test_get_data_statistics_when_dataframe_has_zero_throughput_should_handle():
     assert result["min_throughput"] == 0.0
     assert result["max_throughput"] == 5.0
     assert result["median_throughput"] == 0.0
+    assert result["error"] is None
+
+
+# Tests for parse_throughput_from_text function
+def test_parse_throughput_from_text_when_input_is_valid_should_return_dataframe():
+    """Test that parse_throughput_from_text returns DataFrame with valid input."""
+    result = parse_throughput_from_text("2,3,5,2")
+
+    assert isinstance(result, pd.DataFrame)
+    assert "throughput" in result.columns
+    assert len(result) == 4
+    assert result.loc[0, "throughput"] == 2.0
+    assert result.loc[1, "throughput"] == 3.0
+    assert result.loc[2, "throughput"] == 5.0
+    assert result.loc[3, "throughput"] == 2.0
+
+
+def test_parse_throughput_from_text_when_input_has_whitespace_should_trim():
+    """Test that parse_throughput_from_text trims whitespace around commas."""
+    result = parse_throughput_from_text("2, 3, 5, 2")
+
+    assert len(result) == 4
+    assert result.loc[0, "throughput"] == 2.0
+    assert result.loc[1, "throughput"] == 3.0
+
+
+def test_parse_throughput_from_text_when_input_has_leading_trailing_whitespace_should_trim():
+    """Test that parse_throughput_from_text trims leading and trailing whitespace."""
+    result = parse_throughput_from_text("  2,3,5,2  ")
+
+    assert len(result) == 4
+    assert result.loc[0, "throughput"] == 2.0
+
+
+def test_parse_throughput_from_text_when_input_has_decimal_values_should_accept():
+    """Test that parse_throughput_from_text accepts decimal values."""
+    result = parse_throughput_from_text("2.5,3.7,5.2")
+
+    assert len(result) == 3
+    assert result.loc[0, "throughput"] == 2.5
+    assert result.loc[1, "throughput"] == 3.7
+    assert result.loc[2, "throughput"] == 5.2
+
+
+def test_parse_throughput_from_text_when_input_is_empty_should_raise_value_error():
+    """Test that parse_throughput_from_text raises ValueError for empty input."""
+    with pytest.raises(ValueError, match="cannot be empty"):
+        parse_throughput_from_text("")
+
+
+def test_parse_throughput_from_text_when_input_is_whitespace_only_should_raise_value_error():
+    """Test that parse_throughput_from_text raises ValueError for whitespace-only input."""
+    with pytest.raises(ValueError, match="cannot be empty"):
+        parse_throughput_from_text("   ")
+
+
+def test_parse_throughput_from_text_when_input_has_non_numeric_values_should_raise_value_error():
+    """Test that parse_throughput_from_text raises ValueError for non-numeric values."""
+    with pytest.raises(ValueError, match="must be numeric"):
+        parse_throughput_from_text("2,3,invalid,5")
+
+
+def test_parse_throughput_from_text_when_input_has_negative_values_should_raise_value_error():
+    """Test that parse_throughput_from_text raises ValueError for negative values."""
+    with pytest.raises(ValueError, match="must be non-negative"):
+        parse_throughput_from_text("2,3,-1,5")
+
+
+def test_parse_throughput_from_text_when_input_has_zero_values_should_accept():
+    """Test that parse_throughput_from_text accepts zero values."""
+    result = parse_throughput_from_text("2,0,3,0")
+
+    assert len(result) == 4
+    assert result.loc[1, "throughput"] == 0.0
+    assert result.loc[3, "throughput"] == 0.0
+
+
+def test_parse_throughput_from_text_when_input_has_single_value_should_accept():
+    """Test that parse_throughput_from_text handles single value."""
+    result = parse_throughput_from_text("5")
+
+    assert len(result) == 1
+    assert result.loc[0, "throughput"] == 5.0
+
+
+def test_parse_throughput_from_text_when_input_has_many_commas_should_handle():
+    """Test that parse_throughput_from_text handles multiple consecutive commas."""
+    result = parse_throughput_from_text("2,,3,5")
+
+    # Should filter out empty values
+    assert len(result) == 3
+    assert result.loc[0, "throughput"] == 2.0
+    assert result.loc[1, "throughput"] == 3.0
+    assert result.loc[2, "throughput"] == 5.0
+
+
+def test_parse_throughput_from_text_when_input_exceeds_limit_should_raise_value_error():
+    """Test that parse_throughput_from_text raises ValueError for too many values."""
+    # Create input with 1001 values
+    large_input = ",".join(["1"] * 1001)
+
+    with pytest.raises(ValueError, match="Too many values"):
+        parse_throughput_from_text(large_input)
+
+
+def test_parse_throughput_from_text_when_input_has_exactly_1000_values_should_accept():
+    """Test that parse_throughput_from_text accepts exactly 1000 values."""
+    # Create input with exactly 1000 values
+    large_input = ",".join(["1"] * 1000)
+
+    result = parse_throughput_from_text(large_input)
+    assert len(result) == 1000
+
+
+def test_parse_throughput_from_text_when_used_with_forecast_should_work():
+    """Test that parse_throughput_from_text output works with forecasting functions."""
+    df = parse_throughput_from_text("5,3,7,4,6")
+
+    result = forecast_days_for_work_items(df, num_work_items=10, num_iterations=10)
+
+    assert len(result["simulated_durations"]) == 10
+    assert result["percentiles"]
+    assert all(v > 0 for v in result["percentiles"].values())
+
+
+def test_parse_throughput_from_text_when_used_with_statistics_should_work():
+    """Test that parse_throughput_from_text output works with statistics function."""
+    df = parse_throughput_from_text("2,4,6,8,10")
+
+    result = get_data_statistics(df)
+
+    assert result["total_weeks"] == 5
+    assert result["min_throughput"] == 2.0
+    assert result["max_throughput"] == 10.0
+    assert result["median_throughput"] == 6.0
+    assert result["avg_throughput"] == 6.0
     assert result["error"] is None
