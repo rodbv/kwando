@@ -5,3 +5,12 @@ __pycache__/
 .env
 .venv
 .git
+*.md
+docs/
+tests/
+openspec/
+scripts/
+data/.throughput_values.txt
+.pytest_cache/
+.coverage
+htmlcov/
